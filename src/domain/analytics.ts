@@ -5,7 +5,7 @@
  * Every function that could over-interpret returns an "enough data?" flag.
  */
 import { scoreTest, type TestResult } from './scoring'
-import type { MarkingScheme, Mistake, MistakeCategory, Subject, Task, Test } from './types'
+import type { Mistake, MistakeCategory, Subject, Task, Test } from './types'
 import { SUBJECTS } from './types'
 
 /** Minimum records before we show a pattern instead of "not enough yet". */
@@ -17,12 +17,13 @@ export interface ScoredTest {
   result: TestResult
 }
 
-export function scoreAll(tests: Test[], scheme: MarkingScheme): ScoredTest[] {
+/** Scores each test with the marking scheme frozen on that test. */
+export function scoreAll(tests: Test[]): ScoredTest[] {
   return tests
     .filter((t) => t.status === 'submitted')
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((test) => ({ test, result: scoreTest(test, scheme) }))
+    .map((test) => ({ test, result: scoreTest(test, test.scheme) }))
 }
 
 export interface Summary {

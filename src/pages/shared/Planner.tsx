@@ -10,6 +10,7 @@ import { addDays, todayIST } from '../../domain/dates'
 import { PRIORITY_LABEL, SUBJECT_LABEL, TASK_STATUS_LABEL } from '../../domain/labels'
 import { SUBJECTS, type Priority, type Subject, type Task, type TaskStatus } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
+import { useStudentId } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
 const ORDER: TaskStatus[] = ['in_progress', 'pending', 'done', 'deferred']
@@ -17,8 +18,9 @@ const ORDER: TaskStatus[] = ['in_progress', 'pending', 'done', 'deferred']
 export default function Planner() {
   const { session } = useSignedIn()
   const isStudent = session.role === 'student'
+  const studentId = useStudentId()
   const today = todayIST()
-  const q = useAsync(() => api.listTasks(), [])
+  const q = useAsync(() => api.listTasks(studentId), [studentId])
   const [show, setShow] = useState<'active' | 'done' | 'deferred'>('active')
   const [adding, setAdding] = useState(false)
 

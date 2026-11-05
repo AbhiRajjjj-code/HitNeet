@@ -8,12 +8,14 @@ import { useSignedIn } from '../../context/AppContext'
 import { recurringPatterns, subjectSnapshots, summarise, taskProgress, trend } from '../../domain/analytics'
 import { daysBetween, formatDate, todayIST } from '../../domain/dates'
 import { useAsync } from '../../hooks/useAsync'
-import { useStudentData } from '../../hooks/useStudentData'
+import { useBase, useStudentData } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
 export default function AdminOverview() {
   const { settings } = useSignedIn()
-  const { data, error, loading, reload, scored } = useStudentData()
+  const { data, error, loading, reload, scored, studentId } = useStudentData()
+  const base = useBase()
+  const student = useAsync(() => api.getStudent(studentId), [studentId])
   const today = todayIST()
   const full = useMemo(() => scored.filter((s) => s.test.type === 'full'), [scored])
   const summary = useMemo(() => summarise(scored), [scored])
@@ -31,7 +33,7 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={`${settings.studentName}'s progress`} sub={`${daysBetween(today, settings.examDate)} days to NEET · ${formatDate(settings.examDate, true)}`} />
+      <PageHeader title={student.data ? `${student.data.name}'s progress` : 'Progress'} sub={`${daysBetween(today, settings.examDate)} days to NEET · ${formatDate(settings.examDate, true)}`} />
 
       <p className="flex items-start gap-2.5 rounded-[18px] bg-brand-50 px-4 py-3 text-sm text-brand-900">
         <HeartHandshake className="mt-0.5 size-5 shrink-0" />
@@ -50,7 +52,7 @@ export default function AdminOverview() {
           <PanelHeader
             title="Score trend"
             action={
-              <Link to="/admin/progress" className="flex items-center text-sm font-medium text-brand-700 hover:underline">
+              <Link to={`${base}/progress`} className="flex items-center text-sm font-medium text-brand-700 hover:underline">
                 Full analytics <ChevronRight className="size-4" />
               </Link>
             }
@@ -78,7 +80,7 @@ export default function AdminOverview() {
           <PanelHeader
             title="Mistakes to review"
             action={
-              <Link to="/admin/mistakes" className="flex items-center text-sm font-medium text-brand-700 hover:underline">
+              <Link to={`${base}/mistakes`} className="flex items-center text-sm font-medium text-brand-700 hover:underline">
                 Journal <ChevronRight className="size-4" />
               </Link>
             }
@@ -112,7 +114,7 @@ export default function AdminOverview() {
           <PanelHeader
             title="Tasks"
             action={
-              <Link to="/admin/tasks" className="flex items-center text-sm font-medium text-brand-700 hover:underline">
+              <Link to={`${base}/tasks`} className="flex items-center text-sm font-medium text-brand-700 hover:underline">
                 All <ChevronRight className="size-4" />
               </Link>
             }
@@ -151,7 +153,7 @@ export default function AdminOverview() {
         <PanelHeader
           title="Recent tests"
           action={
-            <Link to="/admin/tests" className="flex items-center text-sm font-medium text-brand-700 hover:underline">
+            <Link to={`${base}/tests`} className="flex items-center text-sm font-medium text-brand-700 hover:underline">
               History <ChevronRight className="size-4" />
             </Link>
           }
@@ -174,7 +176,7 @@ export default function AdminOverview() {
                 return (
                   <tr key={test.id}>
                     <td className="py-2.5 pr-3">
-                      <Link to={`/admin/tests/${test.id}`} className="font-medium hover:underline">
+                      <Link to={`${base}/tests/${test.id}`} className="font-medium hover:underline">
                         {test.name}
                       </Link>
                     </td>

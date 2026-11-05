@@ -1,7 +1,7 @@
 /** Form controls with labels, hints and inline errors built in. */
 import clsx from 'clsx'
-import { Minus, Plus } from 'lucide-react'
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { Eye, EyeOff, Minus, Plus } from 'lucide-react'
+import { useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 
 const control =
   'w-full rounded-control border bg-surface px-3 text-[15px] text-ink placeholder:text-ink-mute/70 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200'
@@ -46,6 +46,35 @@ export function TextField({ label, hint, error, className, optional, ...rest }: 
         aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
         {...rest}
       />
+    </FieldShell>
+  )
+}
+
+/** Password input with a show/hide eye button. */
+export function PasswordField({ label, hint, error, className, optional, ...rest }: FieldProps & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const id = useId()
+  const [shown, setShown] = useState(false)
+  return (
+    <FieldShell id={id} {...{ label, hint, error, className, optional }}>
+      <div className="relative">
+        <input
+          id={id}
+          type={shown ? 'text' : 'password'}
+          className={clsx(control, 'h-11 pr-11', error ? 'border-bad' : 'border-line-strong')}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
+          {...rest}
+        />
+        <button
+          type="button"
+          onClick={() => setShown((v) => !v)}
+          className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-control text-ink-mute hover:text-ink"
+          aria-label={shown ? 'Hide password' : 'Show password'}
+          aria-pressed={shown}
+        >
+          {shown ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+        </button>
+      </div>
     </FieldShell>
   )
 }

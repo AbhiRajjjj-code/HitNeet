@@ -3,19 +3,24 @@
  * Everything else is loaded per-screen through the api.
  */
 import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { Role, Settings } from '../domain/types'
-import { api, type Session } from '../services'
+import type { Settings } from '../domain/types'
+import { api, type Session, type SignUpInput } from '../services'
 
 interface AppState {
   ready: boolean
   session: Session | null
   settings: Settings | null
-  signIn: (role: Role) => Promise<Session>
+  signInWithPassword: (email: string, password: string) => Promise<Session>
+  signInWithGoogle: () => Promise<Session>
+  signUp: (input: SignUpInput) => Promise<Session>
   signOut: () => Promise<void>
   setSettings: (s: Settings) => void
 }
 
 const Ctx = createContext<AppState | null>(null)
+
+/** Where each role lands after signing in. */
+export const homeFor = (s: Session) => (s.role === 'admin' ? '/admin' : '/app')
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -36,19 +41,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signIn = useCallback(async (role: Role) => {
-    const s = await api.signInDemo(role)
+  // Every sign-in path ends the same way: remember the session, refresh settings.
+  const begin = useCallback(async (p: Promise<Session>) => {
+    const s = await p
     setSession(s)
     setSettings(await api.getSettings())
     return s
   }, [])
+
+  const signInWithPassword = useCallback((email: string, password: string) => begin(api.signInWithPassword(email, password)), [begin])
+  const signInWithGoogle = useCallback(() => begin(api.signInWithGoogle()), [begin])
+  const signUp = useCallback((input: SignUpInput) => begin(api.signUp(input)), [begin])
 
   const signOut = useCallback(async () => {
     await api.signOut()
     setSession(null)
   }, [])
 
-  return <Ctx value={{ ready, session, settings, signIn, signOut, setSettings }}>{children}</Ctx>
+  return (
+    <Ctx value={{ ready, session, settings, signInWithPassword, signInWithGoogle, signUp, signOut, setSettings }}>{children}</Ctx>
+  )
 }
 
 export function useApp() {

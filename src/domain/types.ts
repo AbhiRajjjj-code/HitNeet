@@ -39,13 +39,18 @@ export interface Test {
   difficulty: number | null
   paperLength: number | null
   subjects: SubjectCounts[]
+  /**
+   * Marking scheme frozen when the test was saved. Changing the scheme in
+   * Settings later never changes old scores. Set by the server.
+   */
+  scheme: MarkingScheme
   status: TestStatus
   createdAt: string
   updatedAt: string
 }
 
-/** What the Add Test form sends. IDs/timestamps are assigned by the server. */
-export type TestInput = Omit<Test, 'id' | 'studentId' | 'createdAt' | 'updatedAt'>
+/** What the Add Test form sends. IDs, timestamps and the scheme snapshot come from the server. */
+export type TestInput = Omit<Test, 'id' | 'studentId' | 'scheme' | 'createdAt' | 'updatedAt'>
 
 export type MistakeCategory =
   | 'conceptual'
@@ -128,8 +133,29 @@ export interface MarkingScheme {
   unattempted: number
 }
 
+/** One account. Role is decided by the server from the email, never by the browser. */
+export interface Profile {
+  id: string
+  email: string
+  name: string
+  role: Role
+  createdAt: string
+}
+
+/** One row of the admin's "All students" list. */
+export interface StudentSummary {
+  id: string
+  name: string
+  email: string
+  joinedAt: string
+  testCount: number
+  /** Latest full-syllabus test, if any. */
+  latest: { name: string; date: string; score: number; maxScore: number } | null
+  lastActivity: string | null
+}
+
+/** App-wide settings shared by every student (one NEET, one marking scheme). */
 export interface Settings {
-  studentName: string
   /** YYYY-MM-DD. Placeholder until the official date is announced. */
   examDate: string
   examDateConfirmed: boolean
