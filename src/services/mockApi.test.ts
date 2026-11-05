@@ -81,9 +81,9 @@ describe('sign-in and roles', () => {
   })
 
   it('a new sign-up is a student', async () => {
-    const s = await api.signUp({ name: 'Cousin', email: 'cousin@example.com', password: 'longenough' })
-    expect(s.role).toBe('student')
-    expect(await api.listTests(s.userId)).toEqual([])
+    const { session: s } = await api.signUp({ name: 'Cousin', email: 'cousin@example.com', password: 'longenough' })
+    expect(s!.role).toBe('student')
+    expect(await api.listTests(s!.userId)).toEqual([])
   })
 
   it('signing up with the admin email makes an admin, decided by the server', async () => {
@@ -92,12 +92,20 @@ describe('sign-in and roles', () => {
     const db = JSON.parse(store.get('hitneet.demo.v2')!)
     db.accounts = db.accounts.filter((a: { role: string }) => a.role !== 'admin')
     store.set('hitneet.demo.v2', JSON.stringify(db))
-    const s = await api.signUp({ name: 'Abhi', email: ADMIN_EMAILS[0].toUpperCase(), password: 'longenough' })
-    expect(s.role).toBe('admin')
+    const { session: s } = await api.signUp({ name: 'Admin', email: ADMIN_EMAILS[0].toUpperCase(), password: 'longenough' })
+    expect(s!.role).toBe('admin')
   })
 
   it('cannot sign up twice with one email', async () => {
     await expect(api.signUp({ name: 'X', email: DEMO_ACCOUNTS.student, password: 'longenough' })).rejects.toMatchObject({ code: 'conflict' })
+  })
+
+  it('a new password works for the next sign-in', async () => {
+    await asStudent()
+    await api.updatePassword('brand-new-pass')
+    await api.signOut()
+    await expect(api.signInWithPassword(DEMO_ACCOUNTS.student, DEMO_PASSWORD)).rejects.toMatchObject({ code: 'invalid' })
+    expect((await api.signInWithPassword(DEMO_ACCOUNTS.student, 'brand-new-pass')).role).toBe('student')
   })
 
   it('rejects a short password', async () => {

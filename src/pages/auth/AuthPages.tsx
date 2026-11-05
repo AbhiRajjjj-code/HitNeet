@@ -112,9 +112,18 @@ export function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [touched, setTouched] = useState(false)
+  const [confirmFor, setConfirmFor] = useState<string | null>(null)
   const auth = useAuthAction()
 
   if (ready && session) return <Navigate to={homeFor(session)} replace />
+  if (confirmFor)
+    return (
+      <AuthLayout back>
+        <CheckInbox title="Confirm your email">
+          We’ve sent a link to <span className="font-semibold text-ink">{confirmFor}</span>. Open it to finish creating your account, then sign in.
+        </CheckInbox>
+      </AuthLayout>
+    )
 
   const errors = {
     name: !name.trim() ? 'Add your name — it’s how HitNeet greets you.' : undefined,
@@ -126,7 +135,11 @@ export function SignUp() {
     e.preventDefault()
     setTouched(true)
     if (errors.name || errors.email || errors.password) return
-    auth.run(() => signUp({ name, email, password }))
+    auth.run(async () => {
+      const r = await signUp({ name, email, password })
+      if (!r.session) setConfirmFor(email.trim())
+      return r.session
+    })
   }
 
   return (
@@ -203,20 +216,9 @@ export function ForgotPassword() {
   return (
     <AuthLayout back>
       {sentTo ? (
-        <div role="status">
-          <span className="grid size-12 place-items-center rounded-[14px] bg-good-soft text-good">
-            <MailCheck className="size-6" />
-          </span>
-          <h1 className="mt-5 text-[28px] font-bold leading-tight">Check your inbox</h1>
-          <p className="mt-2 text-ink-soft">
-            If an account exists for <span className="font-semibold text-ink">{sentTo}</span>, we’ve sent a link to set a new password. It can take a minute — check
-            spam too.
-          </p>
-          {IS_DEMO && <p className="mt-4 rounded-control bg-sky-soft px-3 py-2.5 text-sm">Demo: no email is really sent. This works once the backend is connected.</p>}
-          <Link to="/login" className="mt-8 inline-block font-semibold text-brand-700 hover:underline">
-            Back to sign in
-          </Link>
-        </div>
+        <CheckInbox title="Check your inbox">
+          If an account exists for <span className="font-semibold text-ink">{sentTo}</span>, we’ve sent a link to set a new password.
+        </CheckInbox>
       ) : (
         <>
           <h1 className="text-[28px] font-bold leading-tight sm:text-[32px]">Reset your password</h1>
@@ -250,7 +252,91 @@ export function ForgotPassword() {
   )
 }
 
+/* ───────────────────────── Set a new password ───────────────────────── */
+
+/** Where the emailed reset link lands. The link signs the user in, then they pick a new password. */
+export function ResetPassword() {
+  const { ready, session } = useApp()
+  const navigate = useNavigate()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [touched, setTouched] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!ready) return <AuthLayout>{null}</AuthLayout>
+  if (!session)
+    return (
+      <AuthLayout back>
+        <h1 className="text-[28px] font-bold leading-tight">This link has expired</h1>
+        <p className="mt-2 text-ink-soft">Reset links work once and only for a short time. Ask for a new one.</p>
+        <Link to="/forgot-password" className="mt-6 inline-block font-semibold text-brand-700 hover:underline">
+          Send a new link
+        </Link>
+      </AuthLayout>
+    )
+
+  const errors = {
+    password: password.length < 8 ? 'Use at least 8 characters.' : undefined,
+    confirm: confirm !== password ? 'The two passwords don’t match.' : undefined,
+  }
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setTouched(true)
+    if (errors.password || errors.confirm) return
+    setBusy(true)
+    setError(null)
+    try {
+      await api.updatePassword(password)
+      navigate(homeFor(session), { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save the new password. Try again.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <AuthLayout>
+      <h1 className="text-[28px] font-bold leading-tight sm:text-[32px]">Set a new password</h1>
+      <p className="mt-1.5 text-ink-soft">For {session.email}.</p>
+      <form onSubmit={submit} noValidate className="mt-7 grid gap-4">
+        <PasswordField
+          label="New password"
+          autoComplete="new-password"
+          hint="At least 8 characters."
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={touched ? errors.password : undefined}
+          autoFocus
+        />
+        <PasswordField label="Type it again" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={touched ? errors.confirm : undefined} />
+        <ServerError message={error} />
+        <Button type="submit" size="lg" className="w-full" loading={busy}>
+          Save new password
+        </Button>
+      </form>
+    </AuthLayout>
+  )
+}
+
 /* ───────────────────────── Shared pieces ───────────────────────── */
+
+function CheckInbox({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div role="status">
+      <span className="grid size-12 place-items-center rounded-[14px] bg-good-soft text-good">
+        <MailCheck className="size-6" />
+      </span>
+      <h1 className="mt-5 text-[28px] font-bold leading-tight">{title}</h1>
+      <p className="mt-2 text-ink-soft">{children} It can take a minute — check spam too.</p>
+      {IS_DEMO && <p className="mt-4 rounded-control bg-sky-soft px-3 py-2.5 text-sm">Demo: no email is really sent.</p>}
+      <Link to="/login" className="mt-8 inline-block font-semibold text-brand-700 hover:underline">
+        Back to sign in
+      </Link>
+    </div>
+  )
+}
 
 /** Runs a sign-in call, tracks which button is busy, shows the server's error, then routes by role. */
 function useAuthAction() {
@@ -259,19 +345,21 @@ function useAuthAction() {
   const [busy, setBusy] = useState<'form' | 'google' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const go = async (which: 'form' | 'google', fn: () => Promise<Session>) => {
+  // `fn` resolves with the new session, or null when there's nothing to open yet.
+  const go = async (which: 'form' | 'google', fn: () => Promise<Session | null>) => {
     setBusy(which)
     setError(null)
     try {
       const s = await fn()
-      navigate(homeFor(s), { replace: true })
+      if (s) navigate(homeFor(s), { replace: true })
+      else setBusy(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Try again.')
       setBusy(null)
     }
   }
 
-  return { busy, error, run: (fn: () => Promise<Session>) => go('form', fn), google: () => go('google', signInWithGoogle) }
+  return { busy, error, run: (fn: () => Promise<Session | null>) => go('form', fn), google: () => go('google', signInWithGoogle) }
 }
 
 function AuthLayout({ children, back }: { children: ReactNode; back?: boolean }) {

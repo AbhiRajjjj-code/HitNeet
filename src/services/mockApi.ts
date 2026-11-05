@@ -201,12 +201,23 @@ export const mockApi: HitNeetApi = {
     save(db)
     const s = toSession(account)
     storeSession(s)
-    return s
+    return { session: s }
   },
 
   async requestPasswordReset() {
     // A real server emails a reset link if the account exists, and says nothing either way.
     await delay()
+  },
+
+  async updatePassword(password) {
+    await delay()
+    if (password.length < 8) throw new ApiError('invalid', 'Use at least 8 characters for the password.')
+    const s = me()
+    const db = load()
+    const a = db.accounts.find((x) => x.id === s.userId)
+    if (!a) throw new ApiError('unauthenticated', 'Please sign in again.')
+    a.password = password
+    save(db)
   },
 
   async signOut() {
