@@ -204,6 +204,14 @@ export const supabaseApi: HitNeetApi = {
     if (error && (error.status === 429 || error instanceof TypeError)) fail(error)
   },
 
+  async completePasswordRecovery(tokenHash) {
+    // The email link carries a one-time code; Supabase swaps it for a session.
+    // Unlike the ?code= flow, this doesn't need the browser that asked for the reset.
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+    if (error || !data.user) throw new ApiError('invalid', 'This reset link has expired or was already used. Ask for a new one.')
+    return sessionFor(data.user)
+  },
+
   async updatePassword(password) {
     if (password.length < 8) throw new ApiError('invalid', 'Use at least 8 characters for the password.')
     const { error } = await supabase.auth.updateUser({ password })

@@ -25,6 +25,7 @@ decides the role from the email: the admin email → `admin`, everyone else →
 | `signInWithGoogle()` | ✓ | ✓ | Real: Supabase Auth Google OAuth. Demo: signs in as the sample student |
 | `signUp({name, email, password})` | ✓ | ✓ | Password ≥ 8 chars. Returns `{ session }`; `session` is `null` when the email must be confirmed first (UI shows "check your inbox") |
 | `requestPasswordReset(email)` | ✓ | ✓ | Always "succeeds" so it can't be used to discover accounts. The emailed link opens `/reset-password` |
+| `completePasswordRecovery(tokenHash)` | ✓ | ✓ | Signs in from the one-time code in the reset email (`/reset-password?token_hash=…&type=recovery`). Works on any device, unlike the `?code=` flow, which needs the browser that asked for the reset |
 | `updatePassword(password)` | ✓ | ✓ | Signed-in user sets a new password (used by `/reset-password`) |
 | `signOut()` | ✓ | ✓ | |
 

@@ -209,6 +209,11 @@ export const mockApi: HitNeetApi = {
     await delay()
   },
 
+  async completePasswordRecovery() {
+    await delay()
+    throw new ApiError('invalid', 'Reset links only work with the real database.')
+  },
+
   async updatePassword(password) {
     await delay()
     if (password.length < 8) throw new ApiError('invalid', 'Use at least 8 characters for the password.')

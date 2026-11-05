@@ -19,9 +19,11 @@ CI (typecheck, lint, tests, build) runs on every push and pull request.
 4. ✅ Database rules tested in CI with PGlite (`supabase/tests/`).
 5. ✅ `supabaseApi.ts` implementing `HitNeetApi`; switch via `VITE_DATA_SOURCE`.
 6. ✅ Email + password sign-in, sign-up (with "confirm your email"), `/reset-password`.
-7. ⏸ "Confirm email" is turned off while only a few people use the app.
-   Before a wider launch: add a custom SMTP sender (e.g. Gmail app password) so
-   confirmation and password-reset emails reach everyone, then turn it back on.
+7. 🔄 Email delivery: custom SMTP sender (Gmail + app password) so confirmation
+   and password-reset emails reach everyone. Supabase's "Reset password" email
+   template links to `{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery`
+   so the link works on any device. "Confirm email" can be switched back on once
+   delivery is tested.
 8. ✅ Google sign-in (Google Cloud OAuth client → Supabase provider). The Google
    app is in "Testing" mode (only listed test users) until it's published.
 9. ✅ Demo-only UI (banner, role switch, demo accounts box) hidden when `IS_DEMO` is false.
