@@ -23,8 +23,9 @@ decides the role from the email: the admin email → `admin`, everyone else →
 | `getSession()` | ✓ | ✓ | `null` when signed out. Session = `{ userId, role, name, email }` |
 | `signInWithPassword(email, pw)` | ✓ | ✓ | Same vague error for "no such email" and "wrong password" |
 | `signInWithGoogle()` | ✓ | ✓ | Real: Supabase Auth Google OAuth. Demo: signs in as the sample student |
-| `signUp({name, email, password})` | ✓ | ✓ | Password ≥ 8 chars. Email already used → `conflict` |
-| `requestPasswordReset(email)` | ✓ | ✓ | Always "succeeds" so it can't be used to discover accounts |
+| `signUp({name, email, password})` | ✓ | ✓ | Password ≥ 8 chars. Returns `{ session }`; `session` is `null` when the email must be confirmed first (UI shows "check your inbox") |
+| `requestPasswordReset(email)` | ✓ | ✓ | Always "succeeds" so it can't be used to discover accounts. The emailed link opens `/reset-password` |
+| `updatePassword(password)` | ✓ | ✓ | Signed-in user sets a new password (used by `/reset-password`) |
 | `signOut()` | ✓ | ✓ | |
 
 ## Students
@@ -82,8 +83,19 @@ One shape everywhere: `ApiError { code, message }`. The UI shows `message` as-is
 | `conflict` | 409 | e.g. signing up with an email that already has an account |
 | `network` | — | offline / server unreachable |
 
+## Two implementations
+| File | Used when | Backed by |
+|------|-----------|-----------|
+| `src/services/mockApi.ts` | `VITE_DATA_SOURCE=demo` (default) | Browser localStorage + sample data |
+| `src/services/supabaseApi.ts` | `VITE_DATA_SOURCE=supabase` | Supabase Auth + Postgres. Tests are saved through the `save_test` database function; everything else is table access filtered by RLS |
+
+The Supabase version maps database errors to the same `ApiError` codes, e.g.
+Postgres `42501` (permission) → `forbidden`, `23514` (a CHECK rule) → `invalid`.
+
 ## Verified by tests
-`src/services/mockApi.test.ts` checks: signed-out rejection, vague sign-in
+`supabase/tests/database.test.ts` runs the real migrations in PGlite and checks
+the database rules directly (roles, privacy between students, read-only admin,
+scheme snapshot, archive). `src/services/mockApi.test.ts` checks: signed-out rejection, vague sign-in
 errors, role decided by email, duplicate sign-up blocked, a student can't read
 another student, only the admin lists students, the admin can't edit study
 records, frozen marking schemes, invalid counts rejected, duplicate requests

@@ -1,6 +1,7 @@
 /**
  * Routes.
  *   /login, /signup, /forgot-password      — public
+ *   /reset-password                        — where the emailed reset link lands
  *   /app/...                               — a student's own pages (home = Add test)
  *   /admin                                 — all students
  *   /admin/students/:studentId/...         — one student's pages, read-only
@@ -15,7 +16,7 @@ import { LoadingBlock } from './components/ui/primitives'
 import { ToastProvider } from './components/ui/toast'
 import { AppProvider, homeFor, useApp } from './context/AppContext'
 import type { Role } from './domain/types'
-import { ForgotPassword, Login, SignUp } from './pages/auth/AuthPages'
+import { ForgotPassword, Login, ResetPassword, SignUp } from './pages/auth/AuthPages'
 
 // Screens load on demand to keep first paint fast.
 const AddTest = lazy(() => import('./pages/student/AddTest'))
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route
               path="/app"

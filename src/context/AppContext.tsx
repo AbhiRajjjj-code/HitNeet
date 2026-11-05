@@ -4,7 +4,7 @@
  */
 import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { Settings } from '../domain/types'
-import { api, type Session, type SignUpInput } from '../services'
+import { api, type Session, type SignUpInput, type SignUpResult } from '../services'
 
 interface AppState {
   ready: boolean
@@ -12,7 +12,10 @@ interface AppState {
   settings: Settings | null
   signInWithPassword: (email: string, password: string) => Promise<Session>
   signInWithGoogle: () => Promise<Session>
-  signUp: (input: SignUpInput) => Promise<Session>
+  /** Resolves with `session: null` when the email must be confirmed first. */
+  signUp: (input: SignUpInput) => Promise<SignUpResult>
+  /** Re-reads the session, e.g. after following a password-reset link. */
+  refreshSession: () => Promise<Session | null>
   signOut: () => Promise<void>
   setSettings: (s: Settings) => void
 }
@@ -51,7 +54,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const signInWithPassword = useCallback((email: string, password: string) => begin(api.signInWithPassword(email, password)), [begin])
   const signInWithGoogle = useCallback(() => begin(api.signInWithGoogle()), [begin])
-  const signUp = useCallback((input: SignUpInput) => begin(api.signUp(input)), [begin])
+  const signUp = useCallback(
+    async (input: SignUpInput) => {
+      const r = await api.signUp(input)
+      if (r.session) await begin(Promise.resolve(r.session))
+      return r
+    },
+    [begin],
+  )
+  const refreshSession = useCallback(async () => {
+    const s = await api.getSession()
+    setSession(s)
+    return s
+  }, [])
 
   const signOut = useCallback(async () => {
     await api.signOut()
@@ -59,7 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx value={{ ready, session, settings, signInWithPassword, signInWithGoogle, signUp, signOut, setSettings }}>{children}</Ctx>
+    <Ctx value={{ ready, session, settings, signInWithPassword, signInWithGoogle, signUp, refreshSession, signOut, setSettings }}>{children}</Ctx>
   )
 }
 

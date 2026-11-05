@@ -40,3 +40,9 @@
 | **Optimistic update** | Show the change immediately, undo it if the server refuses. |
 | **Lint** | A tool that flags suspicious code. We use oxlint. |
 | **Unit test** | Code that checks a small function gives the right answer. We use Vitest. |
+| **Migration** | A SQL file that changes the database's structure. Applied in order, kept in Git, never edited after it's applied — you add a new one instead. |
+| **Publishable key** | The Supabase key the browser uses. Safe to expose: it can only do what the RLS rules allow. |
+| **Secret key** | The Supabase key that bypasses RLS. Server-only; never in the app or the repo. |
+| **Environment variable** | A setting kept outside the code (`.env.local`), e.g. which database to use. `VITE_*` ones are bundled into the browser app. |
+| **RPC** | "Remote procedure call" — the app calls a database function by name, e.g. `save_test`. |
+| **PGlite** | Postgres compiled to run inside Node or a browser, in memory. Used to test the migrations without a server. |

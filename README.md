@@ -36,17 +36,29 @@ npm run dev
 Open http://localhost:5173 and use the **demo accounts** box on the sign-in page
 (password `hitneet-demo`).
 
+**Using a real Supabase database:** copy `.env.example` to `.env.local`, fill in
+your project URL and publishable key, set `VITE_DATA_SOURCE=supabase`, and apply
+the schema with:
+
+```bash
+npx supabase link --project-ref <your-project-ref>
+```
+
+```bash
+npx supabase db push --remote
+```
+
 | Command | What it does |
 |---------|--------------|
 | `npm run dev` | Start the dev server with live reload |
-| `npm test` | Run unit tests (scoring, roles, privacy, API rules) |
+| `npm test` | Run unit tests (scoring, API rules) and database security tests (PGlite) |
 | `npm run typecheck` | Check TypeScript types |
 | `npm run lint` | Lint the code |
 | `npm run build` | Production build into `dist/` |
 
 ## Stack
 React 19 · TypeScript · Vite · Tailwind CSS v4 · Recharts · React Router.
-Backend planned: Supabase (Postgres, Auth, Storage, Row Level Security). Hosting: Vercel.
+Backend: Supabase (Postgres, Auth, Row Level Security), schema as SQL migrations. Hosting: Vercel.
 
 ## Learn how it works
 Design notes live in [`docs/`](docs/README.md) — architecture, API, database,
@@ -56,9 +68,10 @@ design system, plan, decision records and a glossary.
 ```
 src/
   domain/      scoring, analytics, types (pure, tested)
-  services/    API contract + mock implementation (tested)
+  services/    API contract + mock and Supabase implementations
   mock/        demo data
   components/  ui/, domain/, charts/, layout/
   pages/       auth/, student/, shared/, admin/
+supabase/      migrations/ (database schema as SQL) + tests/ (security rules)
 docs/          design docs + decision records
 ```

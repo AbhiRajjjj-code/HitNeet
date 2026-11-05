@@ -2,9 +2,9 @@
  * The API contract.
  *
  * Every screen talks to the backend ONLY through this interface.
- * Today it's implemented by mockApi.ts (browser storage, demo data).
- * In Stage 6 we add supabaseApi.ts implementing the same interface,
- * and flip one line in services/index.ts. No screen changes.
+ * Two implementations: mockApi.ts (browser storage, demo data) and
+ * supabaseApi.ts (the real database). services/index.ts picks one from
+ * VITE_DATA_SOURCE. Screens never know which one they're using.
  *
  * Who can do what:
  *  - student: reads and writes only their own records
@@ -61,14 +61,24 @@ export interface SignUpInput {
   password: string
 }
 
+/**
+ * `session` is null when the server wants the email confirmed first
+ * (Supabase "Confirm email" setting): the UI then says "check your inbox".
+ */
+export interface SignUpResult {
+  session: Session | null
+}
+
 export interface HitNeetApi {
   // auth — the role comes back from the server, decided by email
   getSession(): Promise<Session | null>
   signInWithPassword(email: string, password: string): Promise<Session>
   signInWithGoogle(): Promise<Session>
-  signUp(input: SignUpInput): Promise<Session>
+  signUp(input: SignUpInput): Promise<SignUpResult>
   /** Always resolves, whether or not the email exists — never reveal who has an account. */
   requestPasswordReset(email: string): Promise<void>
+  /** Sets a new password for the signed-in user (after following a reset link). */
+  updatePassword(password: string): Promise<void>
   signOut(): Promise<void>
 
   // settings & reference data (same for everyone)
