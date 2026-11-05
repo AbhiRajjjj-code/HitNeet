@@ -19,11 +19,12 @@ CI (typecheck, lint, tests, build) runs on every push and pull request.
 4. ✅ Database rules tested in CI with PGlite (`supabase/tests/`).
 5. ✅ `supabaseApi.ts` implementing `HitNeetApi`; switch via `VITE_DATA_SOURCE`.
 6. ✅ Email + password sign-in, sign-up (with "confirm your email"), `/reset-password`.
-7. 🔄 Email delivery: custom SMTP sender (Gmail + app password) so confirmation
+7. ✅ Email delivery: custom SMTP sender (Gmail + app password) so confirmation
    and password-reset emails reach everyone. Supabase's "Reset password" email
    template links to `{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery`
-   so the link works on any device. "Confirm email" can be switched back on once
-   delivery is tested.
+   so the link works on any device. Site URL must have **no trailing slash**
+   (the app also tidies `//` in addresses as a safety net). Only the newest
+   reset email works; each new request cancels older links.
 8. ✅ Google sign-in (Google Cloud OAuth client → Supabase provider). The Google
    app is in "Testing" mode (only listed test users) until it's published.
 9. ✅ Demo-only UI (banner, role switch, demo accounts box) hidden when `IS_DEMO` is false.
@@ -43,8 +44,8 @@ Settings go in `.env.local` (git-ignored) locally and in Netlify → Site config
 names will be listed in `.env.example` (added with the backend).
 
 ## Known limitations of the prototype
-- Sign-in is simulated: demo accounts share the password `hitneet-demo`, and
-  "Continue with Google" signs in as the sample student. No reset email is sent.
+- In demo mode, sign-in is simulated: demo accounts share the password
+  `hitneet-demo`, and "Continue with Google" signs in as the sample student.
 - Open sign-up means anyone with the link can create a student account. Their
   data is private to them, and the admin can see it.
 - Data lives only in the browser (localStorage). Clearing site data resets it.
