@@ -14,7 +14,8 @@ erDiagram
   chapters ||--o{ mistakes : "categorises"
   profiles {
     uuid id PK "= auth.users.id"
-    text role "student | admin"
+    text email
+    text role "student | admin (set by trigger)"
     text display_name
   }
   tests {
@@ -29,6 +30,9 @@ erDiagram
     int time_taken_min
     smallint difficulty "1–5"
     smallint paper_length "1–5"
+    numeric correct_marks "scheme snapshot"
+    numeric wrong_penalty "scheme snapshot"
+    numeric blank_marks "scheme snapshot"
     text status "draft|submitted|archived"
   }
   test_subjects {
@@ -88,8 +92,14 @@ shown in IST).
 - `CHECK (difficulty BETWEEN 1 AND 5)` etc. for every rating.
 - `UNIQUE (student_id, request_id)` → duplicate submissions impossible.
 - **Scores are not stored as truth.** A view (`test_results`) computes score,
-  negative marks, accuracy and attempt rate from raw counts × current marking
-  scheme. Change the scheme → every score updates.
+  negative marks, accuracy and attempt rate from raw counts × **the marking
+  scheme saved on that test** (decision 0004).
+- **Scheme snapshot.** When a test is inserted, a trigger copies the current
+  scheme from `settings` into `correct_marks / wrong_penalty / blank_marks`.
+  The browser can't set these. Changing Settings later never changes old scores.
+- **Role from email.** A trigger on `auth.users` insert creates the `profiles`
+  row; its role is `admin` only if the email is in the `admin_emails` table,
+  otherwise `student`. Users can't update their own `role` (RLS + column grant).
 - Foreign keys with `ON DELETE` rules; tests are **archived**, not deleted.
 - Indexes on every foreign key and on `(student_id, test_date)`.
 
@@ -101,10 +111,11 @@ create policy "student reads own"   on tests for select using (student_id = auth
 create policy "admin reads all"     on tests for select using (is_admin());
 create policy "student inserts own" on tests for insert with check (student_id = auth.uid());
 create policy "student updates own" on tests for update using (student_id = auth.uid());
-create policy "admin archives"      on tests for update using (is_admin());
+create policy "admin archives"      on tests for update using (is_admin()); -- archive function only
 ```
-Same pattern for every table. Tests will sign in as each role and try forbidden
-things.
+Mistakes, reflections and tasks get the same **read** policies, but only the
+owning student can insert/update — the admin view is read-only (decision 0003).
+Tests will sign in as each role and try forbidden things.
 
 ## Changes from the original Sheets schema
 | Original | Now | Why |

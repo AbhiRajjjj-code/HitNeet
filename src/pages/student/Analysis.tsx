@@ -1,25 +1,26 @@
-import { BarChart3, CalendarClock, ChevronRight, ClipboardPlus, NotebookPen } from 'lucide-react'
+import { BarChart3, ChevronRight, ClipboardPlus, NotebookPen } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ScoreTrendChart } from '../../components/charts/charts'
 import { Delta, SubjectChip } from '../../components/domain/bits'
+import { Countdown } from '../../components/domain/Countdown'
 import { ScoreTrack } from '../../components/domain/ScoreTrack'
 import { TaskItem } from '../../components/domain/TaskItem'
 import { ButtonLink, EmptyState, ErrorState, LoadingBlock, NotEnoughData, Panel, PanelHeader, Skeleton } from '../../components/ui/primitives'
 import { useSignedIn } from '../../context/AppContext'
 import { scoreNote, subjectSnapshots, summarise, taskProgress, trend, MIN_TESTS_FOR_TREND } from '../../domain/analytics'
-import { daysBetween, formatDate, todayIST } from '../../domain/dates'
+import { formatDate, todayIST } from '../../domain/dates'
 import { SUBJECT_LABEL, SUBJECT_STYLE, TEST_TYPE_LABEL } from '../../domain/labels'
 import type { Task } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
 import { useStudentData } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
-export default function StudentHome() {
-  const { settings, session } = useSignedIn()
+/** The student's dashboard (was "Home"): latest score, trend, subjects, next steps. */
+export default function Analysis() {
+  const { settings } = useSignedIn()
   const { data, error, loading, reload, setData, scored } = useStudentData()
   const today = todayIST()
-  const daysLeft = daysBetween(today, settings.examDate)
 
   const summary = useMemo(() => summarise(scored), [scored])
   const points = useMemo(() => trend(scored.filter((s) => s.test.type === 'full')), [scored])
@@ -33,10 +34,10 @@ export default function StudentHome() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-ink-mute">{formatDate(today, true)}</p>
-          <h1 className="text-[30px] font-bold leading-tight sm:text-[34px]">Hi {session.name}</h1>
+          <h1 className="text-[30px] font-bold leading-tight sm:text-[34px]">Analysis</h1>
+          <p className="text-ink-mute">How your full-syllabus tests are going</p>
         </div>
-        <Countdown days={daysLeft} date={settings.examDate} confirmed={settings.examDateConfirmed} />
+        <Countdown date={settings.examDate} confirmed={settings.examDateConfirmed} />
       </header>
 
       {error ? (
@@ -51,7 +52,7 @@ export default function StudentHome() {
           icon={<ClipboardPlus className="size-10" />}
           title="Your first test goes here"
           body="Add a full mock test — it takes about 3 minutes. Mistakes and reflection can wait till later."
-          action={<ButtonLink to="/app/tests/new">Add a test</ButtonLink>}
+          action={<ButtonLink to="/app">Add a test</ButtonLink>}
         />
       ) : (
         <>
@@ -177,7 +178,7 @@ export default function StudentHome() {
             </Panel>
 
             <div className="grid content-start gap-3">
-              <QuickAction to="/app/tests/new" icon={<ClipboardPlus className="size-5" />} title="Add a test" body="About 3 minutes for the basics" />
+              <QuickAction to="/app" icon={<ClipboardPlus className="size-5" />} title="Add a test" body="About 3 minutes for the basics" />
               <QuickAction to="/app/mistakes?new=1" icon={<NotebookPen className="size-5" />} title="Log a mistake" body="Or a lucky guess worth reviewing" />
               <QuickAction to="/app/progress" icon={<BarChart3 className="size-5" />} title="See progress" body="Trends, subjects, mistake patterns" />
             </div>
@@ -193,25 +194,6 @@ function Stat({ label, value }: { label: string; value: number | string }) {
     <div>
       <dt className="text-xs text-white/65">{label}</dt>
       <dd className="font-display text-2xl font-bold tabular">{value}</dd>
-    </div>
-  )
-}
-
-function Countdown({ days, date, confirmed }: { days: number; date: string; confirmed: boolean }) {
-  return (
-    <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface py-2.5 pl-3 pr-4">
-      <span className="grid size-10 place-items-center rounded-[12px] bg-sky-soft text-sky">
-        <CalendarClock className="size-5" />
-      </span>
-      <div>
-        <p className="font-display text-xl font-bold leading-none tabular">
-          {days > 0 ? `${days} days` : days === 0 ? 'Today' : 'Exam done'}
-        </p>
-        <p className="mt-1 text-xs text-ink-mute">
-          to NEET · {formatDate(date, true)}
-          {!confirmed && ' (expected)'}
-        </p>
-      </div>
     </div>
   )
 }

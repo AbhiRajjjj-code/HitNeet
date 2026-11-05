@@ -3,8 +3,8 @@
 **Status:** Accepted
 
 ## Context
-The owner wanted to review the design before any backend work, and is learning
-full-stack development.
+I wanted to review and iterate on the design before any backend work, and to
+learn full-stack development step by step on a real project.
 
 ## Decision
 All screens call `api` from `src/services/`. Today that is `mockApi`, which

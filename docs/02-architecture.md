@@ -40,7 +40,7 @@ scoring stay exactly as they are.
 
 | Layer | Choice | Rejected alternative | Why |
 |-------|--------|----------------------|-----|
-| UI | React 19 + TypeScript | Plain JS | Types catch mistakes before they reach her phone |
+| UI | React 19 + TypeScript | Plain JS | Types catch mistakes before they reach a student's phone |
 | Build | Vite | Next.js | No server rendering needed; simpler to learn and host |
 | Styling | Tailwind CSS v4 | shadcn/ui kit | Our own small component set = distinctive look, fewer dependencies |
 | Charts | Recharts | Chart.js | React-native API, responsive |

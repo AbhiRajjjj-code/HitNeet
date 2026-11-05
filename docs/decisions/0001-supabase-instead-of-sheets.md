@@ -1,6 +1,6 @@
 # 0001 — Supabase instead of Google Sheets + Apps Script
 
-**Status:** Accepted (approved by owner, Nov 2026)
+**Status:** Accepted (Nov 2026)
 
 ## Context
 The original proposal used Google Sheets as the database and Apps Script as the

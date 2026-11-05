@@ -12,7 +12,7 @@ import { addDays, formatDate, todayIST } from '../../domain/dates'
 import { CATEGORY_LABEL, SUBJECT_LABEL } from '../../domain/labels'
 import { SUBJECTS, type Mistake, type MistakeCategory, type MistakeStatus, type Subject } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
-import { useBase } from '../../hooks/useStudentData'
+import { useBase, useStudentId } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
 type StatusFilter = 'unresolved' | 'resolved' | 'all'
@@ -20,6 +20,7 @@ type StatusFilter = 'unresolved' | 'resolved' | 'all'
 export default function Mistakes() {
   const { session } = useSignedIn()
   const base = useBase()
+  const studentId = useStudentId()
   const toast = useToast()
   const isStudent = session.role === 'student'
   const [params, setParams] = useSearchParams()
@@ -30,7 +31,9 @@ export default function Mistakes() {
   const [editing, setEditing] = useState<Mistake | null>(null)
   const sheetOpen = isStudent && (params.get('new') === '1' || editing !== null)
 
-  const q = useAsync(() => Promise.all([api.listMistakes(), api.listTests(), api.listTasks()]).then(([mistakes, tests, tasks]) => ({ mistakes, tests, tasks })), [])
+  const q = useAsync(() => Promise.all([api.listMistakes(studentId), api.listTests(studentId), api.listTasks(studentId)]).then(([mistakes, tests, tasks]) => ({ mistakes, tests, tasks })),
+    [studentId],
+  )
 
   const chapters = useMemo(
     () => [...new Set((q.data?.mistakes ?? []).filter((m) => subject === 'all' || m.subject === subject).map((m) => m.chapter))].sort(),

@@ -11,14 +11,15 @@ import { RATING_WORDS, SUBJECT_LABEL, TEST_TYPE_LABEL } from '../../domain/label
 import { scoreTest } from '../../domain/scoring'
 import { SUBJECTS } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
-import { useBase } from '../../hooks/useStudentData'
+import { useBase, useStudentId } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
 export default function TestDetail() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
-  const { settings, session } = useSignedIn()
+  const { session } = useSignedIn()
   const base = useBase()
+  const studentId = useStudentId()
   const navigate = useNavigate()
   const toast = useToast()
   const isStudent = session.role === 'student'
@@ -26,14 +27,14 @@ export default function TestDetail() {
   const [archiving, setArchiving] = useState(false)
 
   const q = useAsync(
-    () => Promise.all([api.getTest(id), api.listMistakes({ testId: id }), api.getReflection(id)]).then(([test, mistakes, reflection]) => ({ test, mistakes, reflection })),
-    [id],
+    () => Promise.all([api.getTest(id), api.listMistakes(studentId, { testId: id }), api.getReflection(id)]).then(([test, mistakes, reflection]) => ({ test, mistakes, reflection })),
+    [id, studentId],
   )
 
   if (q.error) return <ErrorState error={q.error} onRetry={q.reload} />
   if (q.loading || !q.data) return <LoadingBlock rows={4} />
   const { test, mistakes, reflection } = q.data
-  const r = scoreTest(test, settings.scheme)
+  const r = scoreTest(test, test.scheme)
 
   const archive = async () => {
     if (!window.confirm(`Archive "${test.name}"? It will be hidden from charts and lists. Linked mistakes stay.`)) return
@@ -96,6 +97,7 @@ export default function TestDetail() {
             <Fact label="Accuracy" value={r.accuracy === null ? '—' : `${r.accuracy}%`} />
             <Fact label="Attempted" value={`${r.attemptRate}%`} />
             <Fact label="Lost to negatives" value={`−${r.negative}`} />
+            <Fact label="Marking" value={`+${test.scheme.correct} / −${test.scheme.incorrect}`} />
             <Fact label="Time" value={test.timeTakenMin ? `${test.timeTakenMin} / ${test.durationMin} min` : `${test.durationMin} min`} />
             {test.difficulty && <Fact label="Felt difficulty" value={`${test.difficulty}/5 · ${test.difficulty >= 4 ? RATING_WORDS.difficulty[1].toLowerCase() : test.difficulty <= 2 ? 'easy' : 'medium'}`} />}
           </dl>

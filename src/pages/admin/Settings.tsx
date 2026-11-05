@@ -5,7 +5,7 @@ import { TextField } from '../../components/ui/form'
 import { useToast } from '../../components/ui/toast'
 import { useSignedIn } from '../../context/AppContext'
 import { scoreTest } from '../../domain/scoring'
-import type { Settings } from '../../domain/types'
+import type { Settings, StudentSummary } from '../../domain/types'
 import { api, IS_DEMO } from '../../services'
 
 export default function AdminSettings() {
@@ -36,9 +36,8 @@ export default function AdminSettings() {
       <PageHeader title="Settings & reports" />
 
       <Panel className="sm:p-6">
-        <PanelHeader title="Exam" sub="Shown as the countdown on the student's home screen." />
+        <PanelHeader title="Exam" sub="Shown as the countdown on every student's home screen." />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Student's display name" value={f.studentName} onChange={(e) => setF({ ...f, studentName: e.target.value })} />
           <TextField label="NEET exam date" type="date" value={f.examDate} onChange={(e) => setF({ ...f, examDate: e.target.value })} />
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input type="checkbox" className="size-4 accent-brand-600" checked={f.examDateConfirmed} onChange={(e) => setF({ ...f, examDateConfirmed: e.target.checked })} />
@@ -48,7 +47,7 @@ export default function AdminSettings() {
       </Panel>
 
       <Panel className="sm:p-6">
-        <PanelHeader title="Marking scheme & paper pattern" sub="Check against the official NEET notice for the exam year. Scores everywhere update from these." />
+        <PanelHeader title="Marking scheme & paper pattern" sub="Check against the official NEET notice. Applies to tests added from now on — saved tests keep the scheme they were marked with." />
         <div className="grid grid-cols-3 gap-3">
           <TextField label="Per correct" inputMode="decimal" value={f.scheme.correct} onChange={(e) => setF({ ...f, scheme: { ...f.scheme, correct: num(e.target.value) } })} />
           <TextField label="Penalty per wrong" inputMode="decimal" value={f.scheme.incorrect} onChange={(e) => setF({ ...f, scheme: { ...f.scheme, incorrect: num(e.target.value) } })} />
@@ -78,9 +77,9 @@ export default function AdminSettings() {
       </div>
 
       <Panel className="sm:p-6">
-        <PanelHeader title="Export" sub="Download records as CSV — opens in Excel or Google Sheets." />
+        <PanelHeader title="Export" sub="Every student's records as CSV — opens in Excel or Google Sheets." />
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => exportTests(settings).then(() => toast('Tests exported'))}>
+          <Button variant="secondary" onClick={() => exportTests().then(() => toast('Tests exported'))}>
             <Download className="size-4" /> Tests (CSV)
           </Button>
           <Button variant="secondary" onClick={() => exportMistakes().then(() => toast('Mistakes exported'))}>
@@ -99,7 +98,7 @@ export default function AdminSettings() {
             variant="secondary"
             onClick={async () => {
               await api.resetDemo?.()
-              window.location.href = '/admin'
+              window.location.href = '/login'
             }}
           >
             <RotateCcw className="size-4" /> Reset demo data
@@ -112,8 +111,11 @@ export default function AdminSettings() {
 
 function download(name: string, rows: (string | number | null)[][]) {
   const esc = (v: string | number | null) => {
-    const s = v === null ? '' : String(v)
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    let s = v === null ? '' : String(v)
+    // Formula-injection guard: a text cell starting with = + - @ would run as a
+    // formula in Excel/Sheets. Prefix it with ' so it stays plain text.
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const blob = new Blob(['﻿' + rows.map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
   const a = document.createElement('a')
@@ -123,21 +125,28 @@ function download(name: string, rows: (string | number | null)[][]) {
   URL.revokeObjectURL(a.href)
 }
 
-async function exportTests(settings: Settings) {
-  const tests = await api.listTests()
-  const header = ['date', 'name', 'type', 'source', 'score', 'max', 'accuracy', 'negative', 'phy_c', 'phy_i', 'chem_c', 'chem_i', 'bio_c', 'bio_i', 'difficulty']
-  const rows = tests.map((t) => {
-    const r = scoreTest(t, settings.scheme)
+/** Runs `fn` for each student and tags every row with the student's name. */
+async function perStudent<T>(fn: (s: StudentSummary) => Promise<T[]>) {
+  const students = await api.listStudents()
+  const chunks = await Promise.all(students.map(async (s) => (await fn(s)).map((row) => ({ student: s, row }))))
+  return chunks.flat()
+}
+
+async function exportTests() {
+  const tests = await perStudent((s) => api.listTests(s.id))
+  const header = ['student', 'date', 'name', 'type', 'source', 'score', 'max', 'accuracy', 'negative', 'phy_c', 'phy_i', 'chem_c', 'chem_i', 'bio_c', 'bio_i', 'difficulty']
+  const rows = tests.map(({ student, row: t }) => {
+    const r = scoreTest(t, t.scheme)
     const s = (sub: string) => t.subjects.find((x) => x.subject === sub)
-    return [t.date, t.name, t.type, t.source, r.score, r.maxScore, r.accuracy, r.negative, s('physics')?.correct ?? null, s('physics')?.incorrect ?? null, s('chemistry')?.correct ?? null, s('chemistry')?.incorrect ?? null, s('biology')?.correct ?? null, s('biology')?.incorrect ?? null, t.difficulty]
+    return [student.name, t.date, t.name, t.type, t.source, r.score, r.maxScore, r.accuracy, r.negative, s('physics')?.correct ?? null, s('physics')?.incorrect ?? null, s('chemistry')?.correct ?? null, s('chemistry')?.incorrect ?? null, s('biology')?.correct ?? null, s('biology')?.incorrect ?? null, t.difficulty]
   })
   download('hitneet-tests.csv', [header, ...rows])
 }
 
 async function exportMistakes() {
-  const ms = await api.listMistakes()
+  const ms = await perStudent((s) => api.listMistakes(s.id))
   download('hitneet-mistakes.csv', [
-    ['test_id', 'subject', 'chapter', 'topic', 'question', 'category', 'lucky_guess', 'what_went_wrong', 'correct_approach', 'confidence', 'status'],
-    ...ms.map((m) => [m.testId, m.subject, m.chapter, m.topic, m.questionNumber, m.category, m.luckyGuess ? 'yes' : 'no', m.whatWentWrong, m.correctApproach, m.confidence, m.status]),
+    ['student', 'test_id', 'subject', 'chapter', 'topic', 'question', 'category', 'lucky_guess', 'what_went_wrong', 'correct_approach', 'confidence', 'status'],
+    ...ms.map(({ student, row: m }) => [student.name, m.testId, m.subject, m.chapter, m.topic, m.questionNumber, m.category, m.luckyGuess ? 'yes' : 'no', m.whatWentWrong, m.correctApproach, m.confidence, m.status]),
   ])
 }

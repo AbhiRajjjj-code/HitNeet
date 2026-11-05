@@ -1,5 +1,7 @@
 /**
  * Add / edit a test. Three short steps, live score preview, autosaved draft.
+ * This is also the student's home page (/app): adding marks is the main job,
+ * so it's the first thing she sees. Analysis lives one tab over.
  *
  * Only correct + incorrect are typed; unattempted is worked out, which
  * removes the most common data-entry mistake (counts not adding up).
@@ -8,14 +10,15 @@ import clsx from 'clsx'
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Countdown } from '../../components/domain/Countdown'
 import { Button, ErrorState, LoadingBlock, Panel } from '../../components/ui/primitives'
 import { Rating, Segmented, Stepper, TextField } from '../../components/ui/form'
 import { useToast } from '../../components/ui/toast'
 import { useSignedIn } from '../../context/AppContext'
-import { todayIST } from '../../domain/dates'
+import { formatDate, todayIST } from '../../domain/dates'
 import { RATING_WORDS, SUBJECT_LABEL, SUBJECT_STYLE, TEST_TYPE_LABEL } from '../../domain/labels'
 import { scoreTest, validateCounts } from '../../domain/scoring'
-import { SUBJECTS, type Settings, type Subject, type SubjectCounts, type Test, type TestInput, type TestType } from '../../domain/types'
+import { SUBJECTS, type MarkingScheme, type Settings, type Subject, type SubjectCounts, type Test, type TestInput, type TestType } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
 import { api } from '../../services'
 
@@ -80,18 +83,27 @@ function toCounts(f: Form): SubjectCounts[] {
 
 const STEPS = ['Basics', 'Marks', 'How it felt'] as const
 
-export default function AddTest() {
+export default function AddTest({ home = false }: { home?: boolean }) {
   const { id } = useParams()
   const { settings } = useSignedIn()
   const existing = useAsync(() => (id ? api.getTest(id) : Promise.resolve(null)), [id])
 
   if (id && existing.error) return <ErrorState error={existing.error} onRetry={existing.reload} />
   if (id && (existing.loading || !existing.data)) return <LoadingBlock />
-  return <TestForm key={id ?? 'new'} initial={existing.data ? fromTest(existing.data, settings) : null} editId={id ?? null} />
+  return (
+    <TestForm
+      key={id ?? 'new'}
+      home={home}
+      initial={existing.data ? fromTest(existing.data, settings) : null}
+      editId={id ?? null}
+      // An edited test keeps the scheme it was first marked with; a new one uses today's.
+      scheme={existing.data?.scheme ?? settings.scheme}
+    />
+  )
 }
 
-function TestForm({ initial, editId }: { initial: Form | null; editId: string | null }) {
-  const { settings } = useSignedIn()
+function TestForm({ initial, editId, scheme, home }: { initial: Form | null; editId: string | null; scheme: MarkingScheme; home: boolean }) {
+  const { settings, session } = useSignedIn()
   const navigate = useNavigate()
   const toast = useToast()
   const [requestId] = useState(() => crypto.randomUUID())
@@ -143,7 +155,7 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
     }))
 
   const counts = toCounts(form)
-  const result = useMemo(() => scoreTest({ subjects: counts }, settings.scheme), [counts, settings.scheme])
+  const result = useMemo(() => scoreTest({ subjects: counts }, scheme), [counts, scheme])
   // Shown live (not only after "Next"): an impossible count is never a half-typed state worth hiding.
   const countIssues: Partial<Record<Subject, string>> = Object.fromEntries(
     counts.map((c) => {
@@ -210,11 +222,21 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
   }
 
   return (
-    <div className="mx-auto max-w-5xl pb-20 lg:pb-0">
-      <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink">
-        <ArrowLeft className="size-4" /> Back
-      </button>
-      <h1 className="text-[28px] font-bold leading-tight sm:text-[32px]">{editId ? 'Edit test' : 'Add a test'}</h1>
+    <div className={clsx('mx-auto max-w-5xl', step > 0 && 'pb-20 lg:pb-0')}>
+      {home ? (
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-ink-mute">{formatDate(todayIST(), true)}</p>
+            <p className="text-[30px] font-bold leading-tight sm:text-[34px]">Hi {session.name}</p>
+          </div>
+          <Countdown date={settings.examDate} confirmed={settings.examDateConfirmed} />
+        </header>
+      ) : (
+        <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink">
+          <ArrowLeft className="size-4" /> Back
+        </button>
+      )}
+      <h1 className={clsx('font-bold leading-tight', home ? 'text-2xl' : 'text-[28px] sm:text-[32px]')}>{editId ? 'Edit test' : 'Add a test'}</h1>
       <p className="mt-1 text-ink-soft">Just the numbers for now. Mistakes and reflection can come later.</p>
 
       {restored && (
@@ -245,7 +267,7 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
         ))}
       </ol>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_300px] lg:items-start">
+      <div className={clsx('mt-5 grid gap-5 lg:items-start', step > 0 && 'lg:grid-cols-[1fr_300px]')}>
         <Panel className="sm:p-6">
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -256,7 +278,8 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
                 onChange={(e) => set('name', e.target.value)}
                 error={touched ? basicsErrors.name : undefined}
                 className="sm:col-span-2"
-                autoFocus
+                // Not on the home page: popping the phone keyboard on every visit is annoying.
+                autoFocus={!home}
               />
               <TextField label="Date" type="date" value={form.date} max={todayIST()} onChange={(e) => set('date', e.target.value)} error={touched ? basicsErrors.date : undefined} />
               <TextField label="Source" placeholder="Coaching or book" optional value={form.source} onChange={(e) => set('source', e.target.value)} list="sources" />
@@ -307,7 +330,7 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
             <div className="space-y-4">
               {form.type === 'full' && (
                 <p className="text-sm text-ink-mute">
-                  Full paper: {settings.pattern.physics} + {settings.pattern.chemistry} + {settings.pattern.biology} questions, +{settings.scheme.correct} / −{settings.scheme.incorrect}.
+                  Full paper: {settings.pattern.physics} + {settings.pattern.chemistry} + {settings.pattern.biology} questions, +{scheme.correct} / −{scheme.incorrect}.
                 </p>
               )}
               {counts.map((c) => {
@@ -398,9 +421,10 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
           </div>
         </Panel>
 
-        {/* Live preview */}
-        {/* Phones: a compact strip pinned above the bottom bar, so the score
+        {/* Live preview — only once there are marks to show (step 2 onwards).
+            Phones: a compact strip pinned above the bottom bar, so the score
             stays visible while typing. Desktop: a full card beside the form. */}
+        {step > 0 && (
         <aside
           className="fixed inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom))] z-30 lg:sticky lg:inset-auto lg:top-6 lg:z-auto"
           aria-live="polite"
@@ -428,6 +452,7 @@ function TestForm({ initial, editId }: { initial: Form | null; editId: string | 
             <p className="mt-4 hidden text-xs text-white/50 lg:block">The server recalculates this when you save.</p>
           </div>
         </aside>
+        )}
       </div>
     </div>
   )

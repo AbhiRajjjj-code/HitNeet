@@ -10,19 +10,20 @@ import { TEST_TYPE_LABEL } from '../../domain/labels'
 import { scoreTest } from '../../domain/scoring'
 import type { TestType } from '../../domain/types'
 import { useAsync } from '../../hooks/useAsync'
-import { useBase } from '../../hooks/useStudentData'
+import { useBase, useStudentId } from '../../hooks/useStudentData'
 import { api } from '../../services'
 
 const RANGES = { all: 'All time', '30': 'Last 30 days', '90': 'Last 90 days' } as const
 
 export default function Tests() {
-  const { settings, session } = useSignedIn()
+  const { session } = useSignedIn()
   const base = useBase()
+  const studentId = useStudentId()
   const isStudent = session.role === 'student'
   const [type, setType] = useState<TestType | ''>('')
   const [source, setSource] = useState('')
   const [range, setRange] = useState<keyof typeof RANGES>('all')
-  const { data, error, loading, reload } = useAsync(() => api.listTests({ includeDrafts: true }), [])
+  const { data, error, loading, reload } = useAsync(() => api.listTests(studentId, { includeDrafts: true }), [studentId])
 
   const sources = useMemo(() => [...new Set((data ?? []).map((t) => t.source).filter(Boolean))].sort(), [data])
   const rows = useMemo(() => {
@@ -30,8 +31,8 @@ export default function Tests() {
     const from = range === 'all' ? '' : addDays(todayIST(), -Number(range))
     return data
       .filter((t) => (!type || t.type === type) && (!source || t.source === source) && (!from || t.date >= from))
-      .map((t) => ({ test: t, result: scoreTest(t, settings.scheme) }))
-  }, [data, type, source, range, settings.scheme])
+      .map((t) => ({ test: t, result: scoreTest(t, t.scheme) }))
+  }, [data, type, source, range])
 
   return (
     <div>
@@ -40,7 +41,7 @@ export default function Tests() {
         sub={data ? `${data.length} test${data.length === 1 ? '' : 's'} recorded` : undefined}
         action={
           isStudent && (
-            <ButtonLink to="/app/tests/new">
+            <ButtonLink to="/app">
               <Plus className="size-4" /> Add a test
             </ButtonLink>
           )
@@ -80,7 +81,7 @@ export default function Tests() {
           icon={<ClipboardList className="size-10" />}
           title={data?.length ? 'No tests match these filters' : 'No tests yet'}
           body={data?.length ? 'Try clearing a filter.' : 'Add a test and it will show up here.'}
-          action={isStudent && !data?.length ? <ButtonLink to="/app/tests/new">Add a test</ButtonLink> : undefined}
+          action={isStudent && !data?.length ? <ButtonLink to="/app">Add a test</ButtonLink> : undefined}
         />
       ) : (
         <Panel className="p-0 sm:p-0">

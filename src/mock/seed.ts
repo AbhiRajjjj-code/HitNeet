@@ -3,16 +3,42 @@
  * Never mix with real records. The mock API stores this in the browser's
  * localStorage under a "demo" key; the real backend will never read it.
  */
-import type { Mistake, Reflection, Settings, Task, Test } from '../domain/types'
+import type { MarkingScheme, Mistake, Profile, Reflection, Settings, Task, Test } from '../domain/types'
 
 export const DEMO_STUDENT_ID = 'stu_demo'
 
+/**
+ * Emails that get the admin role — DEMO ONLY (placeholder address).
+ * In the mock this list decides the role at sign-up. With Supabase the real
+ * admin email lives in the database's `admin_emails` table, set from the
+ * Supabase dashboard — never in this repo or in browser code.
+ */
+export const ADMIN_EMAILS = ['admin@example.com']
+
+/** Demo-only password for every sample account. Real passwords live in Supabase Auth, hashed. */
+export const DEMO_PASSWORD = 'hitneet-demo'
+
+export const DEMO_ACCOUNTS = {
+  student: 'chhoti@example.com',
+  admin: ADMIN_EMAILS[0],
+} as const
+
+const at = (date: string) => `${date}T09:00:00.000Z`
+
+export const SEED_PROFILES: Profile[] = [
+  { id: 'adm_demo', email: ADMIN_EMAILS[0], name: 'Admin', role: 'admin', createdAt: at('2026-07-01') },
+  { id: DEMO_STUDENT_ID, email: 'chhoti@example.com', name: 'Chhoti', role: 'student', createdAt: at('2026-07-01') },
+  { id: 'stu_riya', email: 'riya@example.com', name: 'Riya', role: 'student', createdAt: at('2026-10-10') },
+  { id: 'stu_kabir', email: 'kabir@example.com', name: 'Kabir', role: 'student', createdAt: at('2026-11-03') },
+]
+
+const NEET_SCHEME: MarkingScheme = { correct: 4, incorrect: 1, unattempted: 0 }
+
 export const DEFAULT_SETTINGS: Settings = {
-  studentName: 'Chhoti',
   // Placeholder: NEET is usually held on the first Sunday of May. Confirm once NTA announces.
   examDate: '2027-05-02',
   examDateConfirmed: false,
-  scheme: { correct: 4, incorrect: 1, unattempted: 0 },
+  scheme: NEET_SCHEME,
   pattern: { physics: 45, chemistry: 45, biology: 90 },
   durationMin: 180,
 }
@@ -30,24 +56,28 @@ type Row = [
   bio: [number, number],
 ]
 
-const rows: Row[] = [
-  ['tst_01', '2026-07-12', 'Full Test 1', 'Allen AITS', 3, 3, 180, [24, 12], [30, 8], [70, 12]],
-  ['tst_02', '2026-07-26', 'Full Test 2', 'Allen AITS', 3, 3, 175, [26, 10], [31, 7], [72, 10]],
-  ['tst_03', '2026-08-09', 'Major Test 3', 'Aakash', 4, 4, 180, [22, 14], [29, 9], [71, 13]],
-  ['tst_04', '2026-08-23', 'Full Test 4', 'Allen AITS', 3, 3, 172, [27, 10], [33, 6], [75, 9]],
-  ['tst_05', '2026-09-06', 'Full Test 5', 'Allen AITS', 2, 3, 168, [28, 9], [34, 6], [76, 8]],
-  ['tst_06', '2026-09-20', 'Major Test 6', 'Aakash', 5, 4, 180, [25, 11], [32, 8], [74, 10]],
-  ['tst_07', '2026-10-04', 'Full Test 7', 'Allen AITS', 3, 3, 170, [30, 8], [35, 5], [78, 7]],
-  ['tst_08', '2026-10-18', 'Full Test 8', 'Allen AITS', 3, 3, 174, [31, 7], [36, 5], [79, 7]],
-  ['tst_09', '2026-11-01', 'Full Test 9', 'Allen AITS', 3, 3, 171, [30, 9], [37, 4], [81, 6]],
+type StudentRow = [studentId: string, ...Row]
+
+const rows: StudentRow[] = [
+  [DEMO_STUDENT_ID, 'tst_01', '2026-07-12', 'Full Test 1', 'Allen AITS', 3, 3, 180, [24, 12], [30, 8], [70, 12]],
+  [DEMO_STUDENT_ID, 'tst_02', '2026-07-26', 'Full Test 2', 'Allen AITS', 3, 3, 175, [26, 10], [31, 7], [72, 10]],
+  [DEMO_STUDENT_ID, 'tst_03', '2026-08-09', 'Major Test 3', 'Aakash', 4, 4, 180, [22, 14], [29, 9], [71, 13]],
+  [DEMO_STUDENT_ID, 'tst_04', '2026-08-23', 'Full Test 4', 'Allen AITS', 3, 3, 172, [27, 10], [33, 6], [75, 9]],
+  [DEMO_STUDENT_ID, 'tst_05', '2026-09-06', 'Full Test 5', 'Allen AITS', 2, 3, 168, [28, 9], [34, 6], [76, 8]],
+  [DEMO_STUDENT_ID, 'tst_06', '2026-09-20', 'Major Test 6', 'Aakash', 5, 4, 180, [25, 11], [32, 8], [74, 10]],
+  [DEMO_STUDENT_ID, 'tst_07', '2026-10-04', 'Full Test 7', 'Allen AITS', 3, 3, 170, [30, 8], [35, 5], [78, 7]],
+  [DEMO_STUDENT_ID, 'tst_08', '2026-10-18', 'Full Test 8', 'Allen AITS', 3, 3, 174, [31, 7], [36, 5], [79, 7]],
+  [DEMO_STUDENT_ID, 'tst_09', '2026-11-01', 'Full Test 9', 'Allen AITS', 3, 3, 171, [30, 9], [37, 4], [81, 6]],
+  ['stu_riya', 'tst_r1', '2026-10-19', 'Mock 1', 'PW', 3, 3, 180, [18, 14], [27, 10], [64, 15]],
+  ['stu_riya', 'tst_r2', '2026-11-02', 'Mock 2', 'PW', 3, 3, 178, [21, 12], [29, 9], [68, 12]],
 ]
 
 const ts = (date: string) => `${date}T14:30:00.000Z`
 
 export const SEED_TESTS: Test[] = [
-  ...rows.map(([id, date, name, source, difficulty, paperLength, timeTaken, p, c, b]): Test => ({
+  ...rows.map(([studentId, id, date, name, source, difficulty, paperLength, timeTaken, p, c, b]): Test => ({
     id,
-    studentId: DEMO_STUDENT_ID,
+    studentId,
     name,
     date,
     type: 'full',
@@ -63,6 +93,7 @@ export const SEED_TESTS: Test[] = [
       { subject: 'chemistry', totalQuestions: 45, correct: c[0], incorrect: c[1], unattempted: 45 - c[0] - c[1] },
       { subject: 'biology', totalQuestions: 90, correct: b[0], incorrect: b[1], unattempted: 90 - b[0] - b[1] },
     ],
+    scheme: NEET_SCHEME,
     status: 'submitted',
     createdAt: ts(date),
     updatedAt: ts(date),
@@ -81,6 +112,7 @@ export const SEED_TESTS: Test[] = [
     difficulty: 4,
     paperLength: 3,
     subjects: [{ subject: 'physics', totalQuestions: 45, correct: 32, incorrect: 7, unattempted: 6 }],
+    scheme: NEET_SCHEME,
     status: 'submitted',
     createdAt: ts('2026-10-25'),
     updatedAt: ts('2026-10-25'),

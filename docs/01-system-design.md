@@ -8,49 +8,58 @@ a score, but not *why* marks were lost or *what to do next*. Notes end up scatte
 HitNeet turns each mock into: a recorded result → logged mistakes → a short
 reflection → a few concrete tasks → trends over time.
 
+I built it first for my sister, then opened it up so other family members
+preparing for NEET can use it too.
+
 ## Users and roles
 
 | Role | Who | Can do |
 |------|-----|--------|
-| **Student** | Chhoti (one account) | Add/edit her tests, log mistakes, write reflections, manage tasks, see analytics |
-| **Admin** | Brother (one account) | See everything; change settings (exam date, marking scheme); archive tests; export CSV. Can't tick her tasks or edit her reflections |
+| **Student** | Anyone who signs up (Google or email + password) | Add/edit their own tests, log mistakes, write reflections, manage their tasks, see their analytics |
+| **Admin** | One configured email | See every student's records (read-only); change shared settings (exam date, marking scheme); archive tests; export CSV |
 
-**Tenancy:** one student today. Every record still carries a `student_id`, so a
-second student later is a data change, not a rewrite.
+**Tenancy:** many students, each with private records. Every record carries a
+`student_id`; the database only lets a student read and write their own rows.
+The role is decided by the server from the email — see
+[decision 0003](decisions/0003-accounts-roles-and-read-only-admin.md).
 
 ## Core flows
 
-1. **Add a test** (target: under 3–5 minutes on a phone) — name, date, type →
-   correct/incorrect per subject (blank is worked out) → optional difficulty/time.
+1. **Add a test** — the student's home page (target: under 3–5 minutes on a
+   phone). Name, date, type → correct/incorrect per subject (blank is worked
+   out) → optional difficulty/time.
 2. **Log a mistake** — subject, chapter, type of mistake, what went wrong, the fix.
    Includes *lucky guesses* (right answer, but unsure).
 3. **Reflect** — difficulty, confidence, concentration, stress (1–5), notes, next target.
 4. **Plan** — turn a mistake into a task; tick tasks off.
-5. **Review progress** — trends, subject accuracy, negative marks, recurring patterns.
-6. **Admin overview** — the same data, framed for supporting, not grading.
+5. **Analysis & progress** — latest score, trends, subject accuracy, negative
+   marks, recurring patterns.
+6. **Admin** — list of all students → one student's overview, framed for
+   supporting, not grading.
 
 ## Non-functional requirements
 
 | Need | How |
 |------|-----|
-| Works on a phone | Mobile-first layout, bottom navigation, 44px tap targets, no sideways scroll at 375px |
+| Works on a phone | Mobile-first layout, bottom tab bar on every screen size, 44px tap targets, no sideways scroll at 375px |
 | Never lose data | Drafts autosave in the browser; saves are retry-safe (idempotent) |
-| Correct numbers | Scores always recalculated from raw counts; server validates |
-| Private | Only the two accounts can sign in; database rules enforce who sees what |
+| Correct numbers | Scores recalculated from raw counts × the marking scheme frozen on each test; server validates |
+| Private | Database rules enforce who sees what; a student never sees another student's data |
 | Honest analytics | "Not enough data yet" instead of guessing; no chapter accuracy without chapter data |
 | Kind tone | Never "weak"/"failed"; one score is never called a trend |
 | Times | All dates shown in Asia/Kolkata |
 
 ## Scale (year one)
 
-~25 mock tests, ~300 mistakes, ~100 tasks, 2 users. Under 1 MB of data.
-Any free tier is far more than enough; performance is a non-issue at this size.
+A handful of students × ~25 mock tests, ~300 mistakes and ~100 tasks each —
+a few MB of data. Free tiers are far more than enough.
 
-## Out of scope for v1
+## Out of scope for now
 
-AI recommendations, OCR of question papers, multiple students, notifications,
-payments, native app. (Question-photo upload comes with the backend.)
+AI recommendations, OCR of question papers, notifications, payments, native app,
+admin editing a student's records. (Question-photo upload comes with the backend.)
 
 ## Open questions
 
-- Exact NEET 2027 date and pattern — admin sets these in Settings once NTA publishes.
+- Exact NEET 2027 date and pattern — the admin sets these in Settings once NTA publishes.
+- Whether sign-up should become invite-only if strangers start signing up.

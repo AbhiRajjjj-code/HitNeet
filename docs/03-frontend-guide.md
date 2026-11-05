@@ -7,7 +7,7 @@ Start the app (see the main README), then open these files in order.
 |------|--------------|
 | `index.html` | The single HTML page. Loads fonts and `src/main.tsx`. |
 | `src/main.tsx` | Mounts React into `<div id="root">`. |
-| `src/App.tsx` | **Routes** — which URL shows which screen. `/app/*` = student, `/admin/*` = admin. `RequireRole` sends you to the right place. |
+| `src/App.tsx` | **Routes** — which URL shows which screen. `/app/*` = a student's own pages, `/admin/students/:studentId/*` = the admin looking at one student. `RequireRole` sends each role to the right place. |
 | `src/index.css` | **Design tokens** (colours, fonts, radii) in the `@theme` block. Tailwind turns them into classes like `bg-brand-600`. |
 
 ## Domain (pure logic — the "brain")
@@ -39,25 +39,36 @@ Start the app (see the main README), then open these files in order.
 | `components/ui/` | Generic: `Button`, `Panel`, `TextField`, `Stepper`, `Rating`, `EmptyState`, `ErrorState`, toasts |
 | `components/domain/` | HitNeet-specific: `ScoreTrack` (the 720 bar), `MistakeSheet`, `TaskItem`, chips |
 | `components/charts/` | All Recharts charts |
-| `components/layout/Shell.tsx` | Sidebar (desktop), bottom bar (phone), demo banner |
+| `components/layout/Shell.tsx` | Top bar, bottom tab bar (all screen sizes), demo banner, admin student switcher |
 
 ## Screens
 | URL | File |
 |-----|------|
-| `/login` | `pages/Login.tsx` |
-| `/app` | `pages/student/Home.tsx` |
-| `/app/tests/new`, `/app/tests/:id/edit` | `pages/student/AddTest.tsx` |
+| `/login`, `/signup`, `/forgot-password` | `pages/auth/AuthPages.tsx` |
+| `/app` (student home) and `/app/tests/:id/edit` | `pages/student/AddTest.tsx` |
+| `/app/analysis` | `pages/student/Analysis.tsx` (the old "Home" dashboard) |
 | `/app/tests/:id/reflection` | `pages/student/Reflection.tsx` |
-| `/app/tests`, `/admin/tests` | `pages/shared/Tests.tsx` |
-| `/app/tests/:id`, `/admin/tests/:id` | `pages/shared/TestDetail.tsx` |
-| `/app/mistakes`, `/admin/mistakes` | `pages/shared/Mistakes.tsx` |
-| `/app/progress`, `/admin/progress` | `pages/shared/Progress.tsx` |
-| `/app/plan`, `/admin/tasks` | `pages/shared/Planner.tsx` |
-| `/admin` | `pages/admin/Overview.tsx` |
+| `/app/tests`, `/admin/students/:sid/tests` | `pages/shared/Tests.tsx` |
+| `/app/tests/:id`, `/admin/students/:sid/tests/:id` | `pages/shared/TestDetail.tsx` |
+| `/app/mistakes`, `/admin/students/:sid/mistakes` | `pages/shared/Mistakes.tsx` |
+| `/app/progress`, `/admin/students/:sid/progress` | `pages/shared/Progress.tsx` |
+| `/app/plan`, `/admin/students/:sid/tasks` | `pages/shared/Planner.tsx` |
+| `/admin` | `pages/admin/Students.tsx` (everyone who signed up) |
+| `/admin/students/:sid` | `pages/admin/Overview.tsx` |
 | `/admin/settings` | `pages/admin/Settings.tsx` |
+
+**Whose data?** Shared screens call `useStudentId()` (in `hooks/useStudentData.ts`):
+a student always gets their own id; the admin gets the `:studentId` from the URL.
+`useBase()` gives the matching link prefix (`/app` or `/admin/students/:sid`).
 
 "Shared" screens check `session.role` to hide student-only buttons. That's for
 convenience — the **server** is what actually blocks forbidden actions.
+
+**Login artwork:** `public/login-art.webp` (97 KB, converted from the 1.9 MB
+original PNG). If the file is missing, the login page shows the tagline instead.
+
+**Navigation:** one layout on every screen size — top bar (logo, name, Planner
+or Settings, sign out) and a bottom tab bar. There is no desktop sidebar.
 
 ## Patterns worth learning here
 - **Every data screen handles 4 states**: loading (skeleton), error (message +

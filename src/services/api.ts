@@ -6,6 +6,11 @@
  * In Stage 6 we add supabaseApi.ts implementing the same interface,
  * and flip one line in services/index.ts. No screen changes.
  *
+ * Who can do what:
+ *  - student: reads and writes only their own records
+ *  - admin:   reads every student's records, changes Settings, archives tests.
+ *             Never creates or edits a student's tests, mistakes or tasks.
+ *
  * Full endpoint list with permissions: docs/04-api-spec.md
  */
 import type {
@@ -13,10 +18,12 @@ import type {
   Mistake,
   MistakeInput,
   MistakeStatus,
+  Profile,
   Reflection,
   ReflectionInput,
   Role,
   Settings,
+  StudentSummary,
   Task,
   TaskInput,
   TaskStatus,
@@ -28,8 +35,7 @@ export interface Session {
   userId: string
   role: Role
   name: string
-  /** The student whose data this session looks at. */
-  studentId: string
+  email: string
 }
 
 /** One error shape for the whole app — screens show `message` as-is. */
@@ -49,39 +55,53 @@ export interface TestFilter {
   includeDrafts?: boolean
 }
 
+export interface SignUpInput {
+  name: string
+  email: string
+  password: string
+}
+
 export interface HitNeetApi {
-  // auth
+  // auth — the role comes back from the server, decided by email
   getSession(): Promise<Session | null>
-  signInDemo(role: Role): Promise<Session>
+  signInWithPassword(email: string, password: string): Promise<Session>
+  signInWithGoogle(): Promise<Session>
+  signUp(input: SignUpInput): Promise<Session>
+  /** Always resolves, whether or not the email exists — never reveal who has an account. */
+  requestPasswordReset(email: string): Promise<void>
   signOut(): Promise<void>
 
-  // settings & reference data
+  // settings & reference data (same for everyone)
   getSettings(): Promise<Settings>
   updateSettings(patch: Partial<Settings>): Promise<Settings> // admin only
   listChapters(): Promise<Chapter[]>
 
-  // tests
-  listTests(filter?: TestFilter): Promise<Test[]>
+  // students
+  listStudents(): Promise<StudentSummary[]> // admin only
+  getStudent(studentId: string): Promise<Profile> // admin, or the student themself
+
+  // tests — reads take the student whose data to show
+  listTests(studentId: string, filter?: TestFilter): Promise<Test[]>
   getTest(id: string): Promise<Test>
   /** `requestId` makes retries safe: same id → same test, never a duplicate. */
-  createTest(input: TestInput, requestId: string): Promise<Test>
-  updateTest(id: string, input: TestInput): Promise<Test>
+  createTest(input: TestInput, requestId: string): Promise<Test> // student, own
+  updateTest(id: string, input: TestInput): Promise<Test> // student, own
   archiveTest(id: string): Promise<void> // admin only
 
   // mistakes
-  listMistakes(filter?: { testId?: string }): Promise<Mistake[]>
-  createMistake(input: MistakeInput, requestId: string): Promise<Mistake>
-  updateMistake(id: string, input: MistakeInput): Promise<Mistake>
-  setMistakeStatus(id: string, status: MistakeStatus): Promise<Mistake>
+  listMistakes(studentId: string, filter?: { testId?: string }): Promise<Mistake[]>
+  createMistake(input: MistakeInput, requestId: string): Promise<Mistake> // student, own
+  updateMistake(id: string, input: MistakeInput): Promise<Mistake> // student, own
+  setMistakeStatus(id: string, status: MistakeStatus): Promise<Mistake> // student, own
 
   // reflections (one per test)
   getReflection(testId: string): Promise<Reflection | null>
-  saveReflection(input: ReflectionInput): Promise<Reflection>
+  saveReflection(input: ReflectionInput): Promise<Reflection> // student, own
 
   // tasks
-  listTasks(): Promise<Task[]>
-  createTask(input: TaskInput, requestId: string): Promise<Task>
-  setTaskStatus(id: string, status: TaskStatus): Promise<Task>
+  listTasks(studentId: string): Promise<Task[]>
+  createTask(input: TaskInput, requestId: string): Promise<Task> // student, own
+  setTaskStatus(id: string, status: TaskStatus): Promise<Task> // student, own
 
   // demo only
   resetDemo?(): Promise<void>
