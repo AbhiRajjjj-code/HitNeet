@@ -45,6 +45,7 @@ Start the app (see the main README), then open these files in order.
 | URL | File |
 |-----|------|
 | `/login`, `/signup`, `/forgot-password` | `pages/auth/AuthPages.tsx` |
+| `/privacy`, `/terms` | `pages/legal/Legal.tsx` (public; required by Google before publishing "Continue with Google") |
 | `/app` (student home) and `/app/tests/:id/edit` | `pages/student/AddTest.tsx` |
 | `/app/analysis` | `pages/student/Analysis.tsx` (the old "Home" dashboard) |
 | `/app/tests/:id/reflection` | `pages/student/Reflection.tsx` |

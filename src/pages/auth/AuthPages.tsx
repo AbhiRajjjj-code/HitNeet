@@ -15,6 +15,7 @@ import { homeFor, useApp } from '../../context/AppContext'
 import type { Session } from '../../services'
 import { api, IS_DEMO } from '../../services'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../../mock/seed'
+import { LegalLinks } from '../legal/Legal'
 import { todayIST } from '../../domain/dates'
 
 /** Login illustration (public/login-art.webp). If it's missing, the panel shows the tagline instead. */
@@ -415,6 +416,7 @@ function AuthLayout({ children, back }: { children: ReactNode; back?: boolean })
           {children}
         </div>
         <p className="mt-10 text-center text-sm text-ink-mute">© {todayIST().slice(0, 4)} HitNeet · Test. Analyse. Improve. Repeat.</p>
+        <LegalLinks className="mt-2" />
       </div>
     </div>
   )
