@@ -6,8 +6,8 @@
  * (admin email → /admin, everyone else → /app). The form never chooses a role.
  */
 import { ArrowLeft, MailCheck } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Brand } from '../../components/domain/bits'
 import { PasswordField, TextField } from '../../components/ui/form'
 import { Button } from '../../components/ui/primitives'
@@ -257,15 +257,37 @@ export function ForgotPassword() {
 
 /** Where the emailed reset link lands. The link signs the user in, then they pick a new password. */
 export function ResetPassword() {
-  const { ready, session } = useApp()
+  const { ready, session, refreshSession } = useApp()
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const tokenHash = params.get('type') === 'recovery' ? params.get('token_hash') : null
+  const [verifying, setVerifying] = useState(tokenHash !== null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [touched, setTouched] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!ready) return <AuthLayout>{null}</AuthLayout>
+  // Exchange the one-time code from the email for a signed-in session, then
+  // remove it from the address bar so it isn't left in history.
+  useEffect(() => {
+    if (!tokenHash) return
+    let alive = true
+    api
+      .completePasswordRecovery(tokenHash)
+      .then(() => refreshSession())
+      .catch(() => undefined) // falls through to "This link has expired"
+      .finally(() => {
+        if (!alive) return
+        setVerifying(false)
+        setParams({}, { replace: true })
+      })
+    return () => {
+      alive = false
+    }
+  }, [tokenHash, refreshSession, setParams])
+
+  if (!ready || verifying) return <AuthLayout>{null}</AuthLayout>
   if (!session)
     return (
       <AuthLayout back>

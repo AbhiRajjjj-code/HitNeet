@@ -77,6 +77,11 @@ export interface HitNeetApi {
   signUp(input: SignUpInput): Promise<SignUpResult>
   /** Always resolves, whether or not the email exists — never reveal who has an account. */
   requestPasswordReset(email: string): Promise<void>
+  /**
+   * Signs the user in from the one-time code in a password-reset email link
+   * (/reset-password?token_hash=…&type=recovery). Works on any device.
+   */
+  completePasswordRecovery(tokenHash: string): Promise<Session>
   /** Sets a new password for the signed-in user (after following a reset link). */
   updatePassword(password: string): Promise<void>
   signOut(): Promise<void>
