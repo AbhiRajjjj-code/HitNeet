@@ -6,27 +6,28 @@
 | 2 | Pick the stack | ✅ Supabase + Vercel + GitHub |
 | 3 | Frontend prototype on demo data | ✅ Done, peer-reviewed |
 | 4 | UI round 1: accounts + login redesign, Add test as home, Analysis tab, multi-student admin, per-test marking scheme | ✅ Done |
-| 5 | Backend: Supabase schema, auth, RLS, connect screens | ⏳ Next |
+| 5 | Backend: Supabase schema, auth, RLS, connect screens | 🔄 In progress — database live, app connected; Google sign-in + email delivery next |
 | 6 | Deploy to Vercel, end-to-end tests, backups | Not started |
 
 CI (typecheck, lint, tests, build) runs on every push and pull request.
 
 ## Backend plan
-1. Create a Supabase project (Mumbai region).
-2. Migrations: tables, CHECK constraints, `test_results` view, RLS policies,
-   scheme-snapshot trigger, role-from-email trigger + `admin_emails` table.
-3. Seed chapters + settings. The admin email is added from the Supabase
-   dashboard, not committed to the repo.
-4. Auth: Google sign-in + email/password + password reset (Supabase Auth).
-   Open sign-up: anyone can join as a student. Add a `/reset-password` page
-   for the emailed link.
-5. `supabaseApi.ts` implementing `HitNeetApi`; switch via `VITE_DATA_SOURCE`.
-6. Re-run the permission tests against the real database.
-7. Hide demo-only UI (banner, role switch, demo accounts box) when `IS_DEMO` is false.
-8. Playwright end-to-end tests for the main flows (sign in each role, add a
+1. ✅ Create a Supabase project (Mumbai region).
+2. ✅ Migrations: tables, CHECK rules, RLS policies, scheme-snapshot trigger,
+   role-from-email trigger + `admin_emails` table. Applied with `supabase db push --remote`.
+3. ✅ Seed chapters + settings. Admin email added from the dashboard (not in Git).
+4. ✅ Database rules tested in CI with PGlite (`supabase/tests/`).
+5. ✅ `supabaseApi.ts` implementing `HitNeetApi`; switch via `VITE_DATA_SOURCE`.
+6. ✅ Email + password sign-in, sign-up (with "confirm your email"), `/reset-password`.
+7. ⏳ Email delivery for confirmations and resets (Supabase's built-in sender
+   only reaches the project's own team; needs a custom SMTP sender or
+   "Confirm email" turned off).
+8. ⏳ Google sign-in (Google Cloud OAuth client → Supabase provider).
+9. ✅ Demo-only UI (banner, role switch, demo accounts box) hidden when `IS_DEMO` is false.
+10. Playwright end-to-end tests for the main flows (sign in each role, add a
    test, log a mistake, admin sees it, export CSV, forbidden routes redirect).
-9. Storage bucket for question photos (private).
-10. Weekly CSV backup routine.
+11. Storage bucket for question photos (private).
+12. Weekly CSV backup routine.
 
 ## Accounts and secrets
 | Service | Safe to put in the app / repo | Never in the repo |
@@ -45,4 +46,4 @@ names will be listed in `.env.example` (added with the backend).
   data is private to them, and the admin can see it.
 - Data lives only in the browser (localStorage). Clearing site data resets it.
 - Question-photo upload is a placeholder.
-- First download is ~104 KB gzipped; charts (~111 KB) load only on chart pages.
+- First download is ~159 KB gzipped (the Supabase library added ~55 KB); charts (~111 KB) load only on chart pages. Could be trimmed by loading only the selected API.
