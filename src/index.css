@@ -1,0 +1,135 @@
+@import 'tailwindcss';
+
+/*
+  HitNeet design tokens.
+  Tailwind v4 turns every --color-* / --font-* / --radius-* below into utility
+  classes, e.g. --color-brand-600 → bg-brand-600, text-brand-600.
+  Change a value here and the whole app follows.
+*/
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Inter', ui-sans-serif, sans-serif;
+
+  /* Paper & ink — cool off-white, deep violet-ink (never pure black) */
+  --color-paper: #f6f5fb;
+  --color-surface: #ffffff;
+  --color-ink: #1e1a36;
+  --color-ink-soft: #4a4566;
+  --color-ink-mute: #6e6a85;
+  --color-line: #e4e1f0;
+  --color-line-strong: #cfcae3;
+
+  /* Brand violet */
+  --color-brand-50: #f2efff;
+  --color-brand-100: #e5dfff;
+  --color-brand-200: #cbbfff;
+  --color-brand-400: #8b72f2;
+  --color-brand-500: #6f52e6;
+  --color-brand-600: #5b3fd9;
+  --color-brand-700: #4a30b8;
+  --color-brand-900: #2a1d6b;
+
+  /* Secondary sky */
+  --color-sky-soft: #e3f4fc;
+  --color-sky: #1e9bd7;
+
+  /* Status */
+  --color-good: #15803d;
+  --color-good-soft: #e3f6e9;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf1dc;
+  --color-bad: #c62828;
+  --color-bad-soft: #fde8e8;
+
+  /* Subjects — used identically everywhere */
+  --color-phy: #0f8fd1;
+  --color-phy-soft: #e1f2fb;
+  --color-chem: #d98a0b;
+  --color-chem-soft: #fcf0d9;
+  --color-bio: #1a9a4b;
+  --color-bio-soft: #e2f5e9;
+
+  /* Radii by hierarchy: panels > controls > chips */
+  --radius-panel: 22px;
+  --radius-control: 12px;
+  --radius-chip: 999px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-ink;
+    letter-spacing: -0.015em;
+  }
+  :focus-visible {
+    outline: 2.5px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button,
+  [role='button'],
+  a,
+  label[for],
+  select {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Grid items default to min-width:auto and can push the page wider than a
+   phone screen. This lets them shrink, so long names truncate instead. */
+.grid > * {
+  min-width: 0;
+}
+
+/* Numbers that line up in tables and score cards */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 220ms ease-out both;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #ece9f6 0, #f6f4fc 60px, #ece9f6 120px);
+  background-size: 400px 100%;
+  animation: shimmer 1.2s linear infinite;
+}
