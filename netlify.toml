@@ -1,0 +1,33 @@
+# Netlify settings — read automatically on every deploy.
+# Netlify builds the app from GitHub on each push to main, and builds a
+# preview link for each pull request.
+
+[build]
+  command = "npm run build"   # typecheck + production build
+  publish = "dist"            # the folder Vite writes the finished site to
+
+[build.environment]
+  NODE_VERSION = "22"         # same Node version as CI
+
+# Single-page app: /app/analysis, /admin/students/… etc. are drawn by React in
+# the browser, not separate files. Serve index.html for any path that isn't a
+# real file, so refreshing or opening a shared link never shows "Page not found".
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Basic security headers for every page.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"                    # nobody can embed HitNeet in a hidden frame
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Built JS/CSS files have a content hash in their name, so they can be cached for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
