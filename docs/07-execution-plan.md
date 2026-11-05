@@ -3,11 +3,11 @@
 | Stage | What | Status |
 |-------|------|--------|
 | 1 | Review the original proposal, adjust scope | ✅ Done |
-| 2 | Pick the stack | ✅ Supabase + Vercel + GitHub |
+| 2 | Pick the stack | ✅ Supabase + Netlify + GitHub |
 | 3 | Frontend prototype on demo data | ✅ Done, peer-reviewed |
 | 4 | UI round 1: accounts + login redesign, Add test as home, Analysis tab, multi-student admin, per-test marking scheme | ✅ Done |
-| 5 | Backend: Supabase schema, auth, RLS, connect screens | 🔄 In progress — database live, app connected; Google sign-in + email delivery next |
-| 6 | Deploy to Vercel, end-to-end tests, backups | Not started |
+| 5 | Backend: Supabase schema, auth, RLS, connect screens | ✅ Done — database live, email + Google sign-in working |
+| 6 | Deploy to Netlify, end-to-end tests, backups | 🔄 Deploy in progress |
 
 CI (typecheck, lint, tests, build) runs on every push and pull request.
 
@@ -19,10 +19,11 @@ CI (typecheck, lint, tests, build) runs on every push and pull request.
 4. ✅ Database rules tested in CI with PGlite (`supabase/tests/`).
 5. ✅ `supabaseApi.ts` implementing `HitNeetApi`; switch via `VITE_DATA_SOURCE`.
 6. ✅ Email + password sign-in, sign-up (with "confirm your email"), `/reset-password`.
-7. ⏳ Email delivery for confirmations and resets (Supabase's built-in sender
-   only reaches the project's own team; needs a custom SMTP sender or
-   "Confirm email" turned off).
-8. ⏳ Google sign-in (Google Cloud OAuth client → Supabase provider).
+7. ⏸ "Confirm email" is turned off while only a few people use the app.
+   Before a wider launch: add a custom SMTP sender (e.g. Gmail app password) so
+   confirmation and password-reset emails reach everyone, then turn it back on.
+8. ✅ Google sign-in (Google Cloud OAuth client → Supabase provider). The Google
+   app is in "Testing" mode (only listed test users) until it's published.
 9. ✅ Demo-only UI (banner, role switch, demo accounts box) hidden when `IS_DEMO` is false.
 10. Playwright end-to-end tests for the main flows (sign in each role, add a
    test, log a mistake, admin sees it, export CSV, forbidden routes redirect).
@@ -33,10 +34,10 @@ CI (typecheck, lint, tests, build) runs on every push and pull request.
 | Service | Safe to put in the app / repo | Never in the repo |
 |---------|-------------------------------|-------------------|
 | Supabase | Project URL, **anon (public) key** — only via env vars | `service_role` key, DB password |
-| Vercel | The `*.vercel.app` URL | Access tokens |
+| Netlify | The `*.netlify.app` URL | Access tokens |
 | GitHub | — | Passwords, personal access tokens |
 
-Secrets go in `.env.local` (git-ignored) and the Vercel dashboard. Variable
+Settings go in `.env.local` (git-ignored) locally and in Netlify → Site configuration → Environment variables for the live site. Variable
 names will be listed in `.env.example` (added with the backend).
 
 ## Known limitations of the prototype

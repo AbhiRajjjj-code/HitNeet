@@ -19,8 +19,8 @@ flowchart LR
     Store["Storage<br/>question photos"]
     Fn["Database functions<br/>score recalculation"]
   end
-  Vercel["Vercel (free)<br/>hosts the built frontend"] -. serves .-> Browser
-  GitHub["GitHub repo"] -- "push → auto deploy" --> Vercel
+  Netlify["Netlify (free)<br/>hosts the built frontend"] -. serves .-> Browser
+  GitHub["GitHub repo"] -- "push → auto deploy" --> Netlify
 ```
 
 ## Layers inside the frontend
@@ -46,7 +46,7 @@ scoring stay exactly as they are.
 | Charts | Recharts | Chart.js | React-native API, responsive |
 | Routing | React Router | — | Standard |
 | Backend + DB | **Supabase** | Google Sheets + Apps Script (original proposal) | Real login, row-level permissions, proper relational DB, fast; Sheets has no real auth and is slow (1–3 s per call). See [decisions/0001](decisions/0001-supabase-instead-of-sheets.md) |
-| Hosting | Vercel | Netlify | Free, auto-deploys from GitHub, `*.vercel.app` URL — no domain needed |
+| Hosting | Netlify | Vercel, Cloudflare Pages | Free, auto-deploys from GitHub, PR preview links, `*.netlify.app` URL — no domain needed ([decision 0005](decisions/0005-netlify-hosting.md)) |
 
 ## Data flow: saving a test (after Stage 6)
 

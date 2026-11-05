@@ -58,7 +58,7 @@ npx supabase db push --remote
 
 ## Stack
 React 19 · TypeScript · Vite · Tailwind CSS v4 · Recharts · React Router.
-Backend: Supabase (Postgres, Auth, Row Level Security), schema as SQL migrations. Hosting: Vercel.
+Backend: Supabase (Postgres, Auth, Row Level Security), schema as SQL migrations. Hosting: Netlify (`netlify.toml`).
 
 ## Learn how it works
 Design notes live in [`docs/`](docs/README.md) — architecture, API, database,

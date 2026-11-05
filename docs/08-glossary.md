@@ -31,7 +31,7 @@
 | **Tailwind** | CSS written as small class names (`p-4`, `text-ink`). |
 | **Build** | Turning source code into small files browsers can load fast (`dist/`). |
 | **Hosting** | A computer on the internet that serves your built files. |
-| **Vercel** | Free hosting that redeploys every time you push to GitHub. |
+| **Netlify** | Free hosting that rebuilds the site every time you push to GitHub, with a preview link for each pull request. |
 | **Environment variable** | A setting (like an API key) kept outside the code, e.g. in `.env.local`. |
 | **Git / commit / branch** | Version history / a saved snapshot / a separate line of work. |
 | **GitHub** | Website that stores your Git repository online. |

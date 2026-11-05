@@ -26,7 +26,7 @@ Read in order.
  │  React frontend      │ ───▶ next:  supabaseApi (real database + login)
  │  (the screens)       │
  └─────────────────────┘
-        hosted free on Vercel                 Supabase (free): Postgres DB,
+        hosted free on Netlify                Supabase (free): Postgres DB,
                                               login, file storage, security rules
 ```
 
