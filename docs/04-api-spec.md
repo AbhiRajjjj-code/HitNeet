@@ -6,34 +6,53 @@ With Supabase these become database queries protected by Row Level Security
 below is the contract either way.
 
 **S** = student, **A** = admin. "Own" = rows where `student_id` is the
-student the session belongs to.
+signed-in student. Read methods take a `studentId`: a student passes their own
+id, the admin passes the id of the student they are viewing.
+
+**The admin view is read-only.** The admin can see every student, change
+Settings and archive tests — but never creates or edits a student's tests,
+mistakes, reflections or tasks (decision 0003).
 
 ## Auth
+Anyone can create an account (Google or email + password). The **server**
+decides the role from the email: the admin email → `admin`, everyone else →
+`student`. The sign-in form never sends a role.
+
 | Operation | S | A | Notes |
 |-----------|---|---|-------|
-| `getSession()` | ✓ | ✓ | `null` when signed out |
-| `signIn…` / `signOut()` | ✓ | ✓ | Demo: pick a role. Real: Supabase Auth (Google or email magic link) |
+| `getSession()` | ✓ | ✓ | `null` when signed out. Session = `{ userId, role, name, email }` |
+| `signInWithPassword(email, pw)` | ✓ | ✓ | Same vague error for "no such email" and "wrong password" |
+| `signInWithGoogle()` | ✓ | ✓ | Real: Supabase Auth Google OAuth. Demo: signs in as the sample student |
+| `signUp({name, email, password})` | ✓ | ✓ | Password ≥ 8 chars. Email already used → `conflict` |
+| `requestPasswordReset(email)` | ✓ | ✓ | Always "succeeds" so it can't be used to discover accounts |
+| `signOut()` | ✓ | ✓ | |
+
+## Students
+| Operation | S | A | Notes |
+|-----------|---|---|-------|
+| `listStudents()` | ✗ 403 | ✓ | Name, email, test count, latest full-test score, last activity |
+| `getStudent(id)` | self | ✓ | Profile only |
 
 ## Settings & reference data
 | Operation | S | A | Notes |
 |-----------|---|---|-------|
 | `getSettings()` | read | read | exam date, marking scheme, paper pattern |
-| `updateSettings(patch)` | ✗ 403 | ✓ | Rejects correct ≤ 0, penalty < 0 |
+| `updateSettings(patch)` | ✗ 403 | ✓ | Rejects correct ≤ 0, penalty < 0. New scheme applies to tests saved **from now on** |
 | `listChapters()` | ✓ | ✓ | Syllabus master list |
 
 ## Tests
 | Operation | S | A | Notes |
 |-----------|---|---|-------|
-| `listTests(filter)` | own | ✓ | Filters: type, source, from/to date, drafts. Archived hidden |
+| `listTests(studentId, filter)` | own | ✓ | Filters: type, source, from/to date, drafts. Archived hidden |
 | `getTest(id)` | own | ✓ | 404 for missing *or* not-yours (don't reveal existence) |
-| `createTest(input, requestId)` | ✓ | ✗ | Validates every subject's counts add up. Same `requestId` → same test |
-| `updateTest(id, input)` | own | ✗ | Same validation |
+| `createTest(input, requestId)` | ✓ | ✗ | Validates every subject's counts add up. Same `requestId` → same test. Server copies today's marking scheme onto the test (`scheme`) |
+| `updateTest(id, input)` | own | ✗ | Same validation. Keeps the test's original `scheme` |
 | `archiveTest(id)` | ✗ 403 | ✓ | Soft delete; mistakes/reflection kept |
 
 ## Mistakes
 | Operation | S | A | Notes |
 |-----------|---|---|-------|
-| `listMistakes({testId?})` | own | ✓ | |
+| `listMistakes(studentId, {testId?})` | own | ✓ | |
 | `createMistake(input, requestId)` | ✓ | ✗ | Needs chapter + a test that belongs to the student |
 | `updateMistake(id, input)` | own | ✗ | |
 | `setMistakeStatus(id, status)` | own | ✗ | open → reviewing → resolved |
@@ -47,7 +66,7 @@ student the session belongs to.
 ## Tasks
 | Operation | S | A | Notes |
 |-----------|---|---|-------|
-| `listTasks()` | own | ✓ | |
+| `listTasks(studentId)` | own | ✓ | |
 | `createTask(input, requestId)` | ✓ | ✗ | "Make a task" from a mistake uses `task-from-<mistakeId>` → max one per mistake |
 | `setTaskStatus(id, status)` | own | ✗ | Sets `completedAt` when done |
 
@@ -60,10 +79,17 @@ One shape everywhere: `ApiError { code, message }`. The UI shows `message` as-is
 | `forbidden` | 403 | signed in but role can't do this |
 | `not_found` | 404 | missing, or belongs to someone else |
 | `invalid` | 400 | validation failed |
-| `conflict` | 409 | (reserved) |
+| `conflict` | 409 | e.g. signing up with an email that already has an account |
 | `network` | — | offline / server unreachable |
 
 ## Verified by tests
-`src/services/mockApi.test.ts` checks: signed-out rejection, student can't
-archive or change settings, admin can, invalid counts rejected, duplicate
-requests don't create duplicates, saved data persists.
+`src/services/mockApi.test.ts` checks: signed-out rejection, vague sign-in
+errors, role decided by email, duplicate sign-up blocked, a student can't read
+another student, only the admin lists students, the admin can't edit study
+records, frozen marking schemes, invalid counts rejected, duplicate requests
+don't create duplicates (per user), saved data persists.
+
+## CSV export
+Settings → Export downloads every student's tests or mistakes with a `student`
+column. Text cells starting with `= + - @` get a leading `'` so Excel/Sheets
+never runs them as formulas (CSV formula injection).

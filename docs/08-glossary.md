@@ -6,7 +6,7 @@
 | **Backend** | The part on a server that stores data and decides who may do what. |
 | **API** | The agreed list of requests the frontend can make to the backend. |
 | **Endpoint** | One item on that list, e.g. "create a test". |
-| **Database** | Organised storage for records (tables of rows). We'll use Postgres. |
+| **Database** | Organised storage for records (tables of rows). HitNeet uses Postgres (through Supabase). |
 | **Supabase** | A hosted service giving you a Postgres database, login, and file storage. |
 | **Postgres** | A popular, reliable open-source database. |
 | **Table / row / column** | Like a sheet / one line / one heading in a spreadsheet. |
