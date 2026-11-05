@@ -2,6 +2,7 @@
  * Routes.
  *   /login, /signup, /forgot-password      — public
  *   /reset-password                        — where the emailed reset link lands
+ *   /privacy, /terms                       — public legal pages (needed for Google sign-in)
  *   /app/...                               — a student's own pages (home = Add test)
  *   /admin                                 — all students
  *   /admin/students/:studentId/...         — one student's pages, read-only
@@ -17,6 +18,7 @@ import { ToastProvider } from './components/ui/toast'
 import { AppProvider, homeFor, useApp } from './context/AppContext'
 import type { Role } from './domain/types'
 import { ForgotPassword, Login, ResetPassword, SignUp } from './pages/auth/AuthPages'
+import { Privacy, Terms } from './pages/legal/Legal'
 
 // Screens load on demand to keep first paint fast.
 const AddTest = lazy(() => import('./pages/student/AddTest'))
@@ -59,6 +61,8 @@ export default function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
 
             <Route
               path="/app"
