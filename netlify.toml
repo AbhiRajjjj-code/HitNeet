@@ -25,6 +25,15 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Content Security Policy: the browser only runs scripts and loads data from
+    # the places listed here. If someone ever sneaks a <script> into a page, it
+    # won't run. Side effect: Netlify's free-plan "Powered by Netlify" badge
+    # (an inline script) can't render either.
+    #   script-src  only our own built JS files (no inline scripts)
+    #   style-src   our CSS + Google Fonts CSS; inline styles for chart/score bar widths
+    #   font-src    Google Fonts files
+    #   connect-src our Supabase project (data + sign-in), https and websockets
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://ozezkcaauxfjjullwrcz.supabase.co wss://ozezkcaauxfjjullwrcz.supabase.co; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 # Built JS/CSS files have a content hash in their name, so they can be cached for a year.
 [[headers]]
